@@ -1,0 +1,422 @@
+{
+  "passed": 39,
+  "total": 39,
+  "results": [
+    {
+      "name": "El título y el motor cargan",
+      "ok": true,
+      "detail": {
+        "title": "GALAXIAN · Escuadrón Estelar",
+        "mode": "attract"
+      }
+    },
+    {
+      "name": "La cuadrícula tiene 4 rangos y 24 naves",
+      "ok": true,
+      "detail": {
+        "total": 24,
+        "types": [
+          "flagship",
+          "escort",
+          "emissary",
+          "drone"
+        ]
+      }
+    },
+    {
+      "name": "El jugador comienza en la línea inferior",
+      "ok": true,
+      "detail": {
+        "x": 480,
+        "y": 636,
+        "lane": 0,
+        "dead": false,
+        "invuln": 0
+      }
+    },
+    {
+      "name": "Footer exacto solicitado",
+      "ok": true,
+      "detail": "Diseñado por Juan Guillermo Rivera Berrío con tecnología DeepSeek V 4.1"
+    },
+    {
+      "name": "La formación se desplaza lateralmente de forma conjunta",
+      "ok": true,
+      "detail": {
+        "before": 463,
+        "after": 471,
+        "delta": 8
+      }
+    },
+    {
+      "name": "Sin desbordamiento horizontal en escritorio",
+      "ok": true,
+      "detail": {
+        "sw": 1440,
+        "iw": 1440
+      }
+    },
+    {
+      "name": "El botón inicia la partida",
+      "ok": true,
+      "detail": {
+        "mode": "playing",
+        "score": 0,
+        "lives": 3
+      }
+    },
+    {
+      "name": "El overlay desaparece al jugar",
+      "ok": true,
+      "detail": true
+    },
+    {
+      "name": "La Galaxip se mueve a la derecha",
+      "ok": true,
+      "detail": {
+        "before": 480,
+        "after": 834.8262612688767,
+        "delta": 354.8262612688767
+      }
+    },
+    {
+      "name": "El movimiento horizontal no altera la línea",
+      "ok": true,
+      "detail": {
+        "y": 636
+      }
+    },
+    {
+      "name": "La Galaxip sube exactamente una línea",
+      "ok": true,
+      "detail": {
+        "lane": 1,
+        "y": 582.3680389303524,
+        "expected": 582
+      }
+    },
+    {
+      "name": "No existe una tercera línea superior",
+      "ok": true,
+      "detail": {
+        "lane": 1,
+        "y": 582
+      }
+    },
+    {
+      "name": "La Galaxip baja a la línea inferior",
+      "ok": true,
+      "detail": {
+        "lane": 0,
+        "y": 635.6319610696476,
+        "expected": 636
+      }
+    },
+    {
+      "name": "No existe una tercera línea inferior",
+      "ok": true,
+      "detail": {
+        "lane": 0,
+        "y": 636
+      }
+    },
+    {
+      "name": "El disparo crea proyectiles",
+      "ok": true,
+      "detail": {
+        "bullets": 1
+      }
+    },
+    {
+      "name": "La línea superior esquiva un proyectil de la línea inferior",
+      "ok": true,
+      "detail": {
+        "dead": false,
+        "lives": 3,
+        "y": 582
+      }
+    },
+    {
+      "name": "El mismo proyectil impacta al bajar a su línea",
+      "ok": true,
+      "detail": {
+        "dead": true,
+        "lives": 2,
+        "lane": 0
+      }
+    },
+    {
+      "name": "Dron en formación vale 60 puntos",
+      "ok": true,
+      "detail": {
+        "delta": 60,
+        "score": 60
+      }
+    },
+    {
+      "name": "El proyectil del jugador destruye una nave",
+      "ok": true,
+      "detail": {
+        "shotHit": true,
+        "score": 60,
+        "before": 24,
+        "after": 23,
+        "target": 223
+      }
+    },
+    {
+      "name": "La IA lanza picadas automáticas y dispara",
+      "ok": true,
+      "detail": {
+        "autoDive": true,
+        "autoBullets": true,
+        "attacking": 1,
+        "enemyBullets": 1
+      }
+    },
+    {
+      "name": "Se lanza el Comandante con sus 2 Escoltas",
+      "ok": true,
+      "detail": {
+        "attacking": 3,
+        "squad": {
+          "participants": [
+            0,
+            2,
+            3
+          ],
+          "airKills": [],
+          "broken": false,
+          "bonusAwarded": false
+        }
+      }
+    },
+    {
+      "name": "Los atacantes ejecutan trayectorias fuera de la formación",
+      "ok": true,
+      "detail": [
+        {
+          "type": "flagship",
+          "progress": 0.2,
+          "x": 600,
+          "y": 273
+        },
+        {
+          "type": "escort",
+          "progress": 0.23,
+          "x": 259,
+          "y": 367
+        },
+        {
+          "type": "escort",
+          "progress": 0.21,
+          "x": 395,
+          "y": 385
+        }
+      ]
+    },
+    {
+      "name": "Derribo en picada vale el doble",
+      "ok": true,
+      "detail": {
+        "delta": 200,
+        "targetType": "escort"
+      }
+    },
+    {
+      "name": "El escuadrón completo otorga el bono máximo +1500",
+      "ok": true,
+      "detail": {
+        "score": 2200,
+        "expected": 2200,
+        "alive": 21
+      }
+    },
+    {
+      "name": "La oleada se completa y avanza",
+      "ok": true,
+      "detail": {
+        "wave1": 1,
+        "clearMode": "waveclear",
+        "wave2": 2,
+        "alive": 24,
+        "enemyCount": 24
+      }
+    },
+    {
+      "name": "La dificultad aumenta con la oleada",
+      "ok": true,
+      "detail": {
+        "wave1": {
+          "formationSpeed": 0.52,
+          "formationAmp": 27,
+          "diveSpeed": 1,
+          "aggression": 0.18
+        },
+        "wave2": {
+          "formationSpeed": 0.565,
+          "formationAmp": 29.2,
+          "diveSpeed": 1.065,
+          "aggression": 0.275
+        }
+      }
+    },
+    {
+      "name": "La colisión resta una vida y reaparece",
+      "ok": true,
+      "detail": {
+        "hitLives": 2,
+        "hitDead": true,
+        "respawnDead": false,
+        "respawnLives": 2
+      }
+    },
+    {
+      "name": "La pausa detiene el juego y muestra el panel",
+      "ok": true,
+      "detail": {
+        "mode": "paused",
+        "pauseVisible": true
+      }
+    },
+    {
+      "name": "Se reanuda la partida",
+      "ok": true,
+      "detail": "playing"
+    },
+    {
+      "name": "Al perder las 3 vidas aparece el fin de partida",
+      "ok": true,
+      "detail": {
+        "mode": "gameover",
+        "lives": 0,
+        "overPanel": true
+      }
+    },
+    {
+      "name": "El botón de reintento reinicia la partida",
+      "ok": true,
+      "detail": {
+        "mode": "playing",
+        "lives": 3,
+        "score": 0
+      }
+    },
+    {
+      "name": "La versión móvil no desborda y muestra controles táctiles",
+      "ok": true,
+      "detail": {
+        "mobileOverflow": true,
+        "touchVisible": true,
+        "mobileLayout": {
+          "scrollWidth": 430,
+          "innerWidth": 430,
+          "widest": []
+        }
+      }
+    },
+    {
+      "name": "El footer exacto sigue visible en móvil",
+      "ok": true,
+      "detail": {
+        "text": "Diseñado por Juan Guillermo Rivera Berrío con tecnología DeepSeek V 4.1",
+        "top": 415,
+        "bottom": 441,
+        "innerHeight": 932
+      }
+    },
+    {
+      "name": "El control táctil mueve la Galaxip",
+      "ok": true,
+      "detail": {
+        "before": 480,
+        "after": 780.4631770234056
+      }
+    },
+    {
+      "name": "El control táctil sube una línea y la marca como activa",
+      "ok": true,
+      "detail": {
+        "before": {
+          "x": 783.8597671676662,
+          "y": 636,
+          "lane": 0,
+          "dead": false,
+          "invuln": 1.516700000000001
+        },
+        "after": {
+          "player": {
+            "x": 804.820700380103,
+            "y": 582.3036643156028,
+            "lane": 1,
+            "dead": false,
+            "invuln": 1.0333999999999983
+          },
+          "current": true
+        }
+      }
+    },
+    {
+      "name": "La pantalla de inicio cabe en móvil sin scroll",
+      "ok": true,
+      "detail": {
+        "screen": {
+          "top": 49,
+          "bottom": 346,
+          "height": 297
+        },
+        "card": {
+          "top": 107.703125,
+          "bottom": 287.296875,
+          "height": 179.59375
+        },
+        "button": {
+          "top": 241.296875,
+          "bottom": 275.296875,
+          "height": 34
+        },
+        "inside": true
+      }
+    },
+    {
+      "name": "Cabe sin scroll vertical en portátil 1366×768",
+      "ok": true,
+      "detail": {
+        "innerHeight": 768,
+        "scrollHeight": 768,
+        "cabinet": {
+          "top": 24,
+          "bottom": 703,
+          "height": 679
+        },
+        "footerBottom": 751
+      }
+    },
+    {
+      "name": "Móvil compacto 360×740 sin desbordes y con inicio/línea visibles",
+      "ok": true,
+      "detail": {
+        "innerWidth": 360,
+        "scrollWidth": 360,
+        "startInside": true,
+        "footerBottom": 387,
+        "footerInside": true,
+        "laneInside": true,
+        "laneSize": {
+          "width": 45,
+          "height": 38
+        }
+      }
+    },
+    {
+      "name": "Sin errores JavaScript durante la sesión",
+      "ok": true,
+      "detail": []
+    }
+  ],
+  "errors": [],
+  "testedAt": "2026-10-22T15:53:07.776Z",
+  "viewportDesktop": "1440x1120",
+  "viewportLaptop": "1366x768",
+  "viewportMobile": "430x932"
+}

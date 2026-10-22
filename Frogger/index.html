@@ -1,0 +1,3931 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#071712">
+  <meta name="description" content="Frogger arcade: cruza la carretera, salta por troncos y tortugas, y lleva a la rana a uno de los cinco hogares antes de que se agote el tiempo.">
+  <title>Frogger · Arcade de río</title>
+  <style>
+    :root {
+      --bg-deep: #04100d;
+      --bg: #071712;
+      --panel: #0a2019;
+      --panel-hi: #102d23;
+      --line: rgba(176, 255, 179, 0.16);
+      --line-strong: rgba(176, 255, 179, 0.29);
+      --ink: #eefce9;
+      --muted: #91b8a6;
+      --lime: #b7ff67;
+      --green: #55d66b;
+      --green-dark: #1c7a43;
+      --gold: #ffd16b;
+      --coral: #ff6a61;
+      --cyan: #75e8df;
+      --stage-w: clamp(300px, calc((100svh - 260px) * 0.98765), 820px);
+      --panel-pad: 14px;
+      --radius: 22px;
+      --font-display: "Arial Black", "Segoe UI Black", "Trebuchet MS", sans-serif;
+      --font-body: "Segoe UI", "Trebuchet MS", system-ui, sans-serif;
+      --font-mono: "Cascadia Mono", "Consolas", "Lucida Console", monospace;
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      color-scheme: dark;
+      min-width: 300px;
+      background: var(--bg-deep);
+    }
+
+    body {
+      min-height: 100svh;
+      margin: 0;
+      padding: 14px;
+      display: flex;
+      overflow-x: hidden;
+      color: var(--ink);
+      background:
+        radial-gradient(1100px 660px at 8% -10%, rgba(58, 143, 92, 0.28), transparent 63%),
+        radial-gradient(950px 600px at 104% 4%, rgba(24, 125, 133, 0.24), transparent 60%),
+        radial-gradient(700px 500px at 50% 112%, rgba(119, 78, 33, 0.15), transparent 70%),
+        linear-gradient(155deg, #081a14 0%, #040e0b 48%, #081a16 100%);
+      font-family: var(--font-body);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.28;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.026) 0,
+        rgba(255, 255, 255, 0.026) 1px,
+        transparent 1px,
+        transparent 3px
+      );
+      mix-blend-mode: soft-light;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background: radial-gradient(circle at 50% 44%, transparent 48%, rgba(1, 9, 7, 0.58) 115%);
+    }
+
+    [hidden] { display: none !important; }
+
+    button { font: inherit; }
+    button, a { -webkit-tap-highlight-color: transparent; }
+
+    :focus-visible {
+      outline: 2px solid var(--lime);
+      outline-offset: 3px;
+    }
+
+    .page {
+      position: relative;
+      z-index: 1;
+      width: min(100%, calc(var(--stage-w) + (var(--panel-pad) * 2)));
+      margin: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* ---------- Barra superior ---------- */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      min-height: 54px;
+      padding: 0 2px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      min-width: 0;
+      gap: 11px;
+    }
+
+    .brand-mark {
+      flex: 0 0 auto;
+      width: 52px;
+      height: 52px;
+      display: grid;
+      place-items: center;
+      border-radius: 16px;
+      background:
+        radial-gradient(circle at 36% 28%, rgba(214, 255, 167, 0.26), transparent 43%),
+        linear-gradient(155deg, #164b31, #0a271e 71%);
+      border: 1px solid rgba(186, 255, 140, 0.26);
+      box-shadow:
+        inset 0 1px 0 rgba(225, 255, 210, 0.14),
+        0 8px 24px rgba(0, 0, 0, 0.34),
+        0 0 28px rgba(83, 204, 102, 0.1);
+    }
+
+    .brand-mark svg {
+      width: 39px;
+      height: 39px;
+      display: block;
+      filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.27));
+    }
+
+    .brand-copy { min-width: 0; }
+
+    .brand-copy h1 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: clamp(25px, 4.2svh, 34px);
+      line-height: 0.92;
+      letter-spacing: 0.055em;
+      font-weight: 900;
+      color: #d8ffad;
+      text-shadow:
+        0 2px 0 #3d8b42,
+        0 5px 16px rgba(104, 243, 105, 0.19);
+    }
+
+    .brand-copy p {
+      margin: 5px 0 0;
+      overflow: hidden;
+      color: var(--muted);
+      font-size: 9px;
+      line-height: 1.2;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .brand-copy p span {
+      color: #4d8069;
+      padding: 0 3px;
+    }
+
+    .top-actions {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .icon-btn {
+      min-height: 37px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 0 11px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: linear-gradient(180deg, rgba(24, 57, 44, 0.82), rgba(10, 31, 24, 0.9));
+      color: #c8e8d7;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      transition: border-color 150ms ease, background 150ms ease, transform 150ms ease, color 150ms ease;
+    }
+
+    .icon-btn svg {
+      width: 16px;
+      height: 16px;
+      flex: 0 0 auto;
+    }
+
+    .icon-btn:hover:not(:disabled) {
+      border-color: var(--line-strong);
+      background: linear-gradient(180deg, rgba(35, 78, 58, 0.94), rgba(13, 39, 30, 0.96));
+      color: #efffe8;
+      transform: translateY(-1px);
+    }
+
+    .icon-btn:active:not(:disabled) { transform: translateY(1px); }
+
+    .icon-btn:disabled {
+      opacity: 0.38;
+      cursor: default;
+    }
+
+    .icon-btn[aria-pressed="false"] { color: #ffb49e; }
+
+    .icon-btn .icon-off { display: none; }
+    .icon-btn[aria-pressed="false"] .icon-on { display: none; }
+    .icon-btn[aria-pressed="false"] .icon-off { display: block; }
+
+    /* ---------- Panel del juego ---------- */
+    .game-panel {
+      container-type: inline-size;
+      width: 100%;
+      padding: var(--panel-pad);
+      border: 1px solid rgba(164, 255, 170, 0.17);
+      border-radius: calc(var(--radius) + 4px);
+      background:
+        linear-gradient(180deg, rgba(22, 54, 41, 0.5), transparent 20%),
+        linear-gradient(155deg, #0c241c, #081a15 58%, #0a1d18);
+      box-shadow:
+        inset 0 1px 0 rgba(220, 255, 216, 0.07),
+        0 28px 80px rgba(0, 0, 0, 0.42),
+        0 8px 24px rgba(0, 0, 0, 0.24);
+    }
+
+    .hud {
+      display: grid;
+      grid-template-columns: 1fr 1fr 0.72fr 0.92fr 1.72fr;
+      gap: 7px;
+      margin-bottom: 9px;
+    }
+
+    .stat {
+      min-width: 0;
+      padding: 7px 9px 6px;
+      border: 1px solid rgba(168, 255, 171, 0.1);
+      border-radius: 10px;
+      background:
+        linear-gradient(180deg, rgba(35, 75, 58, 0.44), rgba(8, 26, 21, 0.64));
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+    }
+
+    .stat-label {
+      display: block;
+      margin-bottom: 2px;
+      color: #7fa792;
+      font-size: 8px;
+      line-height: 1.2;
+      font-weight: 800;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    .stat-value {
+      display: block;
+      overflow: hidden;
+      color: #ecffe3;
+      font-family: var(--font-mono);
+      font-size: clamp(14px, 2.5cqi, 19px);
+      line-height: 1.15;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.035em;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .stat-value.bump { animation: score-bump 220ms ease; }
+    @keyframes score-bump {
+      0% { transform: translateY(0); color: #ecffe3; }
+      42% { transform: translateY(-2px); color: var(--gold); }
+      100% { transform: translateY(0); color: #ecffe3; }
+    }
+
+    .stat-lives { display: flex; flex-direction: column; }
+
+    .lives-wrap {
+      display: flex;
+      align-items: center;
+      min-height: 22px;
+      gap: 3px;
+    }
+
+    .life-frog {
+      width: 19px;
+      height: 19px;
+      display: inline-grid;
+      place-items: center;
+      filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.32));
+    }
+
+    .life-frog svg { width: 100%; height: 100%; display: block; }
+
+    .no-lives {
+      color: #ff8e7c;
+      font-family: var(--font-mono);
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .stat-timer {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 5px;
+    }
+
+    .time-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .time-head .stat-label { margin: 0; }
+
+    .time-number {
+      color: #eaffdf;
+      font-family: var(--font-mono);
+      font-size: clamp(13px, 2.2cqi, 17px);
+      line-height: 1;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .time-number em {
+      color: #8bb49e;
+      font-size: 0.72em;
+      font-style: normal;
+      padding-left: 1px;
+    }
+
+    .time-track {
+      position: relative;
+      height: 9px;
+      overflow: hidden;
+      border: 1px solid rgba(0, 0, 0, 0.28);
+      border-radius: 999px;
+      background: #06120e;
+      box-shadow:
+        inset 0 2px 5px rgba(0, 0, 0, 0.6),
+        0 1px 0 rgba(206, 255, 201, 0.08);
+    }
+
+    .time-track::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      border-radius: inherit;
+      background: repeating-linear-gradient(
+        to right,
+        transparent 0,
+        transparent calc(10% - 1px),
+        rgba(2, 14, 9, 0.42) calc(10% - 1px),
+        rgba(2, 14, 9, 0.42) 10%
+      );
+    }
+
+    .time-fill {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      border-radius: inherit;
+      transform: scaleX(1);
+      transform-origin: left center;
+      background: linear-gradient(90deg, #39ce69, #9afb61);
+      box-shadow: 0 0 11px rgba(113, 255, 117, 0.32);
+      will-change: transform;
+    }
+
+    .stat-timer.is-warning .time-fill {
+      background: linear-gradient(90deg, #f3a92f, #ffe36b);
+      box-shadow: 0 0 11px rgba(255, 210, 80, 0.3);
+    }
+
+    .stat-timer.is-warning .time-number { color: var(--gold); }
+
+    .stat-timer.is-danger { animation: timer-pulse 800ms ease-in-out infinite; }
+    .stat-timer.is-danger .time-fill {
+      background: linear-gradient(90deg, #e9423f, #ff8a64);
+      box-shadow: 0 0 13px rgba(255, 91, 80, 0.46);
+    }
+    .stat-timer.is-danger .time-number { color: #ff9f8d; }
+
+    @keyframes timer-pulse {
+      0%, 100% { border-color: rgba(255, 107, 97, 0.16); }
+      50% { border-color: rgba(255, 107, 97, 0.48); }
+    }
+
+    /* ---------- Escenario ---------- */
+    .stage {
+      container-type: inline-size;
+      position: relative;
+      width: 100%;
+      aspect-ratio: 800 / 810;
+      overflow: hidden;
+      border: 1px solid rgba(188, 255, 175, 0.2);
+      border-radius: 16px;
+      background: #061b17;
+      box-shadow:
+        inset 0 0 0 1px rgba(0, 0, 0, 0.28),
+        inset 0 0 40px rgba(0, 0, 0, 0.24),
+        0 12px 32px rgba(0, 0, 0, 0.26);
+      isolation: isolate;
+    }
+
+    #gameCanvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .stage-glare {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      overflow: hidden;
+      border-radius: inherit;
+      pointer-events: none;
+    }
+
+    .stage-glare::before {
+      content: "";
+      position: absolute;
+      top: -18%;
+      left: -10%;
+      width: 78%;
+      height: 37%;
+      transform: rotate(-8deg);
+      border-radius: 50%;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.055), transparent);
+      filter: blur(15px);
+    }
+
+    .stage-glare::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      box-shadow:
+        inset 0 0 44px rgba(0, 0, 0, 0.3),
+        inset 0 0 0 1px rgba(226, 255, 214, 0.045);
+    }
+
+    /* ---------- Overlay ---------- */
+    .overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 8;
+      display: grid;
+      place-items: center;
+      overflow: auto;
+      padding: clamp(9px, 2.6cqi, 24px);
+      background:
+        radial-gradient(circle at 50% 42%, rgba(15, 54, 42, 0.56), transparent 67%),
+        rgba(2, 14, 11, 0.79);
+      -webkit-backdrop-filter: blur(5px) saturate(0.9);
+      backdrop-filter: blur(5px) saturate(0.9);
+    }
+
+    .overlay-card {
+      width: min(490px, 100%);
+      max-height: 100%;
+      overflow: auto;
+      padding: clamp(15px, 4.6cqi, 31px) clamp(14px, 4.5cqi, 30px);
+      text-align: center;
+      border: 1px solid rgba(192, 255, 169, 0.2);
+      border-radius: clamp(15px, 3.4cqi, 23px);
+      background:
+        radial-gradient(circle at 50% -20%, rgba(124, 245, 117, 0.19), transparent 52%),
+        linear-gradient(160deg, rgba(18, 48, 37, 0.98), rgba(6, 24, 18, 0.985));
+      box-shadow:
+        inset 0 1px 0 rgba(238, 255, 229, 0.09),
+        0 24px 60px rgba(0, 0, 0, 0.53),
+        0 0 0 1px rgba(0, 0, 0, 0.2);
+      scrollbar-width: thin;
+    }
+
+    .overlay-emblem {
+      width: clamp(47px, 11cqi, 72px);
+      height: clamp(47px, 11cqi, 72px);
+      margin: 0 auto clamp(8px, 2cqi, 13px);
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(201, 255, 159, 0.28);
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 35% 25%, rgba(225, 255, 186, 0.25), transparent 44%),
+        linear-gradient(155deg, #1e613d, #0a2a1f);
+      box-shadow:
+        0 0 0 5px rgba(125, 245, 113, 0.035),
+        0 0 34px rgba(92, 226, 111, 0.2),
+        inset 0 2px 5px rgba(0, 0, 0, 0.28);
+      animation: emblem-float 4.8s ease-in-out infinite;
+    }
+
+    @keyframes emblem-float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-3px); }
+    }
+
+    .overlay-emblem svg {
+      width: 78%;
+      height: 78%;
+      filter: drop-shadow(0 3px 0 rgba(0, 0, 0, 0.23));
+    }
+
+    .overlay-kicker {
+      margin: 0 0 5px;
+      color: #8eef9a;
+      font-size: clamp(7px, 1.55cqi, 10px);
+      font-weight: 800;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+    }
+
+    .overlay-title {
+      margin: 0;
+      color: #ecffdf;
+      font-family: var(--font-display);
+      font-size: clamp(22px, 6.1cqi, 39px);
+      line-height: 1.02;
+      letter-spacing: -0.025em;
+      text-wrap: balance;
+      text-shadow: 0 3px 0 rgba(0, 0, 0, 0.25);
+    }
+
+    .overlay-text {
+      max-width: 39ch;
+      margin: clamp(7px, 1.7cqi, 12px) auto 0;
+      color: #b1cec1;
+      font-size: clamp(10px, 2.25cqi, 13px);
+      line-height: 1.55;
+      text-wrap: pretty;
+    }
+
+    .overlay-stats {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: clamp(4px, 1cqi, 7px);
+      margin: clamp(10px, 2.5cqi, 17px) 0 0;
+    }
+
+    .overlay-stat {
+      min-width: clamp(58px, 16cqi, 85px);
+      flex: 1 1 0;
+      padding: clamp(5px, 1.4cqi, 9px) 6px;
+      border: 1px solid rgba(169, 255, 160, 0.12);
+      border-radius: 9px;
+      background: rgba(2, 15, 11, 0.36);
+    }
+
+    .overlay-stat strong {
+      display: block;
+      color: #e6ffd7;
+      font-family: var(--font-mono);
+      font-size: clamp(13px, 3cqi, 19px);
+      line-height: 1.15;
+      letter-spacing: 0.01em;
+    }
+
+    .overlay-stat span {
+      display: block;
+      margin-top: 2px;
+      color: #81a994;
+      font-size: clamp(6px, 1.45cqi, 8px);
+      font-weight: 800;
+      line-height: 1.2;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .overlay-controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      margin-top: clamp(9px, 2.3cqi, 15px);
+      color: #8fb4a1;
+      font-size: clamp(8px, 1.8cqi, 10px);
+      font-weight: 600;
+    }
+
+    .key-cluster {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    kbd {
+      min-width: 21px;
+      height: 21px;
+      display: inline-grid;
+      place-items: center;
+      padding: 0 5px;
+      border: 1px solid rgba(193, 255, 181, 0.23);
+      border-bottom-color: rgba(0, 0, 0, 0.45);
+      border-radius: 5px;
+      color: #cce8d9;
+      background: linear-gradient(180deg, rgba(47, 86, 68, 0.85), rgba(14, 38, 28, 0.9));
+      box-shadow: 0 2px 0 rgba(0, 0, 0, 0.25);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      line-height: 1;
+    }
+
+    .overlay-action {
+      position: relative;
+      width: min(270px, 100%);
+      min-height: clamp(38px, 7.2cqi, 48px);
+      margin: clamp(12px, 3cqi, 19px) auto 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      padding: 0 21px;
+      border: 1px solid #d6ff9f;
+      border-radius: 12px;
+      color: #0b2915;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.34), transparent 40%),
+        linear-gradient(135deg, #baff72, #65db6b);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.4),
+        0 4px 0 #2e8a45,
+        0 10px 24px rgba(9, 26, 15, 0.42),
+        0 0 30px rgba(123, 255, 113, 0.13);
+      font-size: clamp(12px, 2.7cqi, 15px);
+      font-weight: 900;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
+    }
+
+    .overlay-action svg {
+      width: 15px;
+      height: 15px;
+      transition: transform 150ms ease;
+    }
+
+    .overlay-action:hover {
+      filter: brightness(1.055);
+      transform: translateY(-1px);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.4),
+        0 5px 0 #2e8a45,
+        0 12px 26px rgba(9, 26, 15, 0.42),
+        0 0 36px rgba(123, 255, 113, 0.2);
+    }
+
+    .overlay-action:hover svg { transform: translateX(2px); }
+
+    .overlay-action:active {
+      transform: translateY(3px);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.35),
+        0 1px 0 #2e8a45,
+        0 4px 10px rgba(9, 26, 15, 0.34);
+    }
+
+    .overlay-hint {
+      margin: clamp(6px, 1.5cqi, 10px) 0 0;
+      color: #6d917e;
+      font-size: clamp(7px, 1.55cqi, 9px);
+      line-height: 1.4;
+    }
+
+    .overlay-hint kbd {
+      min-width: 18px;
+      height: 18px;
+      font-size: 8px;
+    }
+
+    /* ---------- Aviso flotante ---------- */
+    .toast {
+      position: absolute;
+      left: 50%;
+      bottom: 11.8%;
+      z-index: 6;
+      min-width: min(250px, 68%);
+      padding: 8px 16px 9px;
+      transform: translate(-50%, 8px);
+      border: 1px solid rgba(207, 255, 186, 0.25);
+      border-radius: 11px;
+      color: #e9ffe0;
+      background: rgba(4, 22, 15, 0.88);
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      text-align: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 150ms ease, transform 150ms ease;
+      -webkit-backdrop-filter: blur(4px);
+      backdrop-filter: blur(4px);
+    }
+
+    .toast.is-visible {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    .toast strong {
+      display: block;
+      color: #d8ffb1;
+      font-size: clamp(10px, 2.05cqi, 13px);
+      line-height: 1.2;
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .toast span {
+      display: block;
+      margin-top: 2px;
+      color: #b6d3c4;
+      font-size: clamp(8px, 1.65cqi, 10px);
+      line-height: 1.35;
+    }
+
+    .toast.tone-danger strong { color: #ff9a83; }
+    .toast.tone-gold strong { color: #ffe08d; }
+    .toast.tone-gold { border-color: rgba(255, 217, 123, 0.3); }
+
+    /* ---------- Ayuda inferior ---------- */
+    .underbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-height: 31px;
+      margin-top: 8px;
+      padding: 0 3px;
+      color: #88ad9a;
+      font-size: 10px;
+      line-height: 1.3;
+    }
+
+    .underbar p { margin: 0; }
+    .desktop-hint { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+
+    .mini-keys {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .mini-keys kbd {
+      min-width: 18px;
+      height: 18px;
+      padding: 0 4px;
+      font-size: 8px;
+    }
+
+    .goal-hint {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #9ecfae;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      white-space: nowrap;
+    }
+
+    .goal-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--lime);
+      box-shadow: 0 0 9px rgba(174, 255, 92, 0.75);
+    }
+
+    .touch-pad {
+      display: none;
+      width: 156px;
+      margin: 9px auto 0;
+      grid-template-columns: repeat(3, 46px);
+      grid-template-rows: repeat(2, 42px);
+      gap: 5px;
+      touch-action: none;
+    }
+
+    .touch-pad button {
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(193, 255, 177, 0.22);
+      border-bottom-color: rgba(0, 0, 0, 0.42);
+      border-radius: 10px;
+      color: #d4f3df;
+      background: linear-gradient(180deg, rgba(42, 82, 62, 0.8), rgba(12, 37, 27, 0.95));
+      box-shadow: 0 2px 0 rgba(0, 0, 0, 0.26);
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .touch-pad button:active {
+      transform: translateY(2px);
+      background: rgba(32, 66, 49, 0.95);
+      box-shadow: none;
+    }
+
+    .touch-pad button svg { width: 17px; height: 17px; }
+    .touch-pad [data-dir="up"] { grid-column: 2; grid-row: 1; }
+    .touch-pad [data-dir="left"] { grid-column: 1; grid-row: 2; }
+    .touch-pad [data-dir="down"] { grid-column: 2; grid-row: 2; }
+    .touch-pad [data-dir="right"] { grid-column: 3; grid-row: 2; }
+
+    /* ---------- Pie ---------- */
+    .footer {
+      position: relative;
+      padding: 8px 12px 3px;
+      text-align: center;
+      color: #7da690;
+      font-size: 10px;
+      line-height: 1.5;
+      letter-spacing: 0.025em;
+    }
+
+    .footer::before {
+      content: "";
+      display: block;
+      width: min(76%, 400px);
+      height: 1px;
+      margin: 0 auto 7px;
+      background: linear-gradient(90deg, transparent, rgba(158, 234, 167, 0.28), transparent);
+    }
+
+    .footer p {
+      margin: 0;
+      text-wrap: balance;
+    }
+
+    .footer span { color: #b6d9bf; }
+
+    .sr-only {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: -1px !important;
+      overflow: hidden !important;
+      clip: rect(0, 0, 0, 0) !important;
+      white-space: nowrap !important;
+      border: 0 !important;
+    }
+
+    /* ---------- Ajustes por tamaño del contenedor ---------- */
+    @container (max-width: 620px) {
+      .hud {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+      .stat-timer {
+        grid-column: 1 / -1;
+        flex-direction: row;
+        align-items: center;
+        gap: 9px;
+        padding-top: 5px;
+        padding-bottom: 5px;
+      }
+      .time-head {
+        flex: 0 0 auto;
+        gap: 5px;
+      }
+      .time-track {
+        flex: 1 1 auto;
+        height: 10px;
+      }
+      .underbar {
+        font-size: 9px;
+      }
+    }
+
+    @container (max-width: 470px) {
+      .hud {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 5px;
+      }
+      .stat-timer { grid-column: 1 / -1; }
+      .stat { padding: 6px 7px 5px; }
+      .stat-label { font-size: 7px; }
+      .life-frog { width: 16px; height: 16px; }
+      .lives-wrap { gap: 1px; }
+      .brand-copy p { display: none; }
+      .topbar { min-height: 46px; }
+      .brand-mark { width: 42px; height: 42px; border-radius: 13px; }
+      .brand-mark svg { width: 32px; height: 32px; }
+      .brand-copy h1 { font-size: 24px; }
+      .icon-btn { min-height: 34px; padding: 0 9px; font-size: 10px; }
+      .underbar { justify-content: center; flex-wrap: wrap; text-align: center; }
+      .goal-hint { font-size: 9px; }
+      .footer { font-size: 9px; }
+    }
+
+    @media (hover: none), (pointer: coarse), (max-width: 700px) {
+      .touch-pad { display: grid; }
+      .desktop-hint { display: none; }
+      .underbar { justify-content: center; }
+      .overlay-controls { display: none; }
+    }
+
+    @media (max-height: 830px) {
+      body { padding: 10px 12px; }
+      .page { gap: 8px; }
+      .topbar { min-height: 48px; }
+      .brand-mark { width: 46px; height: 46px; border-radius: 14px; }
+      .brand-mark svg { width: 35px; height: 35px; }
+      :root {
+        --panel-pad: 11px;
+        --stage-w: clamp(300px, calc((100svh - 268px) * 0.98765), 820px);
+      }
+      .hud { gap: 6px; margin-bottom: 7px; }
+      .stat { padding: 5px 8px; }
+      .underbar { min-height: 27px; margin-top: 6px; }
+      .footer { padding-top: 5px; }
+    }
+
+    @media (max-height: 720px) {
+      body { padding-top: 6px; padding-bottom: 6px; }
+      .page { gap: 7px; }
+      .touch-pad {
+        width: auto;
+        margin-top: 6px;
+        grid-template-columns: repeat(4, 42px);
+        grid-template-rows: 40px;
+        gap: 5px;
+      }
+      .touch-pad button[data-dir] { grid-column: auto; grid-row: 1; }
+      .touch-pad [data-dir="left"] { order: 1; }
+      .touch-pad [data-dir="up"] { order: 2; }
+      .touch-pad [data-dir="down"] { order: 3; }
+      .touch-pad [data-dir="right"] { order: 4; }
+    }
+
+    @media (max-width: 360px) {
+      .stat { padding: 5px 5px 4px; }
+      .stat-label { font-size: 6.5px; letter-spacing: 0.08em; }
+      .stat-value { font-size: 11px; letter-spacing: 0; }
+      .life-frog { width: 14px; height: 14px; }
+      .overlay { padding: 7px; }
+      .overlay-card { padding: 10px 13px; border-radius: 14px; }
+      .overlay-emblem { width: 36px; height: 36px; margin-bottom: 4px; }
+      .overlay-kicker { margin-bottom: 2px; font-size: 7px; }
+      .overlay-title { font-size: 22px; line-height: 1.02; }
+      .overlay-text { margin-top: 4px; font-size: 9px; line-height: 1.35; }
+      .overlay-stats { display: none; }
+      .overlay-controls { display: none; }
+      .overlay-action { width: min(220px, 100%); min-height: 34px; margin-top: 7px; padding-inline: 12px; font-size: 10px; }
+      .overlay-hint { margin-top: 4px; font-size: 7px; }
+      .overlay-hint kbd { min-width: 16px; height: 16px; font-size: 7px; }
+    }
+
+    @media (max-width: 420px) {
+      body { padding: 8px; }
+      :root { --panel-pad: 8px; }
+      .top-actions .btn-label { display: none; }
+      .icon-btn { width: 36px; padding: 0; }
+      .brand { gap: 8px; }
+      .brand-copy h1 { font-size: 22px; }
+      .overlay-title { max-width: 22ch; margin-inline: auto; }
+      .footer { padding-inline: 4px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+      }
+      .toast, .icon-btn, .overlay-action { transition-duration: 0.001ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 64 64" role="img">
+            <defs>
+              <linearGradient id="brandFrog" x1="0" y1="0" x2="0.8" y2="1">
+                <stop offset="0" stop-color="#b6ff77"/>
+                <stop offset="0.58" stop-color="#74df58"/>
+                <stop offset="1" stop-color="#3eaa4e"/>
+              </linearGradient>
+            </defs>
+            <ellipse cx="32" cy="55" rx="20" ry="4.2" fill="#02140d" opacity=".4"/>
+            <path d="M13 43c-4 1.6-7 5.2-7.2 9.1-.1 1.5 1.7 2.6 3.1 1.8l7.4-4.4-3.3-6.5Z" fill="#3a9b4c"/>
+            <path d="M51 43c4 1.6 7 5.2 7.2 9.1.1 1.5-1.7 2.6-3.1 1.8l-7.4-4.4 3.3-6.5Z" fill="#3a9b4c"/>
+            <ellipse cx="32" cy="37" rx="22" ry="18.5" fill="url(#brandFrog)" stroke="#1d622f" stroke-width="2.5"/>
+            <ellipse cx="32" cy="43" rx="12.5" ry="8.5" fill="#d8ff9b" opacity=".42"/>
+            <circle cx="22" cy="23" r="9" fill="#7be862" stroke="#1d622f" stroke-width="2.5"/>
+            <circle cx="42" cy="23" r="9" fill="#7be862" stroke="#1d622f" stroke-width="2.5"/>
+            <circle cx="22" cy="23" r="4.4" fill="#f7fff2"/>
+            <circle cx="42" cy="23" r="4.4" fill="#f7fff2"/>
+            <circle cx="23" cy="23.7" r="2.2" fill="#0b2515"/>
+            <circle cx="41" cy="23.7" r="2.2" fill="#0b2515"/>
+            <path d="M24 38.5c4.2 3.3 11.8 3.3 16 0" fill="none" stroke="#2f7a38" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="17" cy="34" r="2" fill="#3f9a46" opacity=".65"/>
+            <circle cx="49" cy="32" r="1.6" fill="#3f9a46" opacity=".55"/>
+            <circle cx="38" cy="48" r="1.8" fill="#3f9a46" opacity=".45"/>
+          </svg>
+        </div>
+        <div class="brand-copy">
+          <h1>FROGGER</h1>
+          <p>Arcade de río <span>•</span> Edición clásica</p>
+        </div>
+      </div>
+
+      <div class="top-actions">
+        <button class="icon-btn" id="soundBtn" type="button" aria-pressed="true" aria-label="Desactivar sonido" title="Activar o desactivar sonido">
+          <svg class="icon-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M11 5 6.5 9H3v6h3.5L11 19V5Z"/>
+            <path d="M15.2 8.2a5.3 5.3 0 0 1 0 7.6M18 5.5a9.2 9.2 0 0 1 0 13"/>
+          </svg>
+          <svg class="icon-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M11 5 6.5 9H3v6h3.5L11 19V5Z"/>
+            <path d="m16 9 5 6M21 9l-5 6"/>
+          </svg>
+          <span class="btn-label" id="soundLabel">Sonido</span>
+        </button>
+        <button class="icon-btn" id="pauseBtn" type="button" aria-label="Pausar juego" title="Pausar o continuar (P)" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <path d="M9 6v12M15 6v12"/>
+          </svg>
+          <span class="btn-label" id="pauseLabel">Pausa</span>
+        </button>
+      </div>
+    </header>
+
+    <section class="game-panel" aria-label="Juego Frogger">
+      <section class="hud" aria-label="Marcador del juego">
+        <div class="stat">
+          <span class="stat-label">Puntos</span>
+          <strong class="stat-value" id="scoreValue">000000</strong>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Récord</span>
+          <strong class="stat-value" id="bestValue">000000</strong>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Nivel</span>
+          <strong class="stat-value" id="levelValue">01</strong>
+        </div>
+        <div class="stat stat-lives">
+          <span class="stat-label">Vidas</span>
+          <div class="lives-wrap" id="livesWrap" aria-label="3 vidas"></div>
+        </div>
+        <div class="stat stat-timer" id="timerPanel">
+          <div class="time-head">
+            <span class="stat-label">Tiempo</span>
+            <strong class="time-number"><span id="timeValue">30</span><em>s</em></strong>
+          </div>
+          <div class="time-track" id="timeTrack" role="progressbar" aria-label="Tiempo restante" aria-valuemin="0" aria-valuemax="30" aria-valuenow="30">
+            <span class="time-fill" id="timeFill"></span>
+          </div>
+        </div>
+      </section>
+
+      <div class="stage" id="stage">
+        <canvas id="gameCanvas" width="800" height="810" tabindex="-1" aria-label="Tablero de Frogger: carretera con vehículos, río con troncos y tortugas, y cinco hogares en la parte superior.">
+          Tu navegador necesita admitir canvas para jugar a Frogger.
+        </canvas>
+        <div class="stage-glare" aria-hidden="true"></div>
+
+        <div class="overlay" id="overlay">
+          <div class="overlay-card" role="dialog" aria-modal="true" aria-labelledby="overlayTitle" aria-describedby="overlayText">
+            <div class="overlay-emblem" aria-hidden="true">
+              <svg viewBox="0 0 64 64">
+                <defs>
+                  <linearGradient id="overlayFrog" x1="0" y1="0" x2="0.8" y2="1">
+                    <stop offset="0" stop-color="#bdff80"/>
+                    <stop offset="0.58" stop-color="#7ce85d"/>
+                    <stop offset="1" stop-color="#45b557"/>
+                  </linearGradient>
+                </defs>
+                <ellipse cx="32" cy="56" rx="20" ry="4" fill="#02140d" opacity=".36"/>
+                <path d="M13 43c-4.3 1.5-7.2 5.3-7.4 9.2-.1 1.5 1.7 2.6 3.1 1.8l7.6-4.5-3.3-6.5Z" fill="#3a9b4c"/>
+                <path d="M51 43c4.3 1.5 7.2 5.3 7.4 9.2.1 1.5-1.7 2.6-3.1 1.8l-7.6-4.5 3.3-6.5Z" fill="#3a9b4c"/>
+                <ellipse cx="32" cy="37" rx="22" ry="18.5" fill="url(#overlayFrog)" stroke="#1d622f" stroke-width="2.5"/>
+                <ellipse cx="32" cy="43" rx="12.5" ry="8.5" fill="#d8ff9b" opacity=".4"/>
+                <circle cx="22" cy="23" r="9" fill="#7be862" stroke="#1d622f" stroke-width="2.5"/>
+                <circle cx="42" cy="23" r="9" fill="#7be862" stroke="#1d622f" stroke-width="2.5"/>
+                <circle cx="22" cy="23" r="4.4" fill="#f7fff2"/>
+                <circle cx="42" cy="23" r="4.4" fill="#f7fff2"/>
+                <circle cx="23" cy="23.7" r="2.2" fill="#0b2515"/>
+                <circle cx="41" cy="23.7" r="2.2" fill="#0b2515"/>
+                <path d="M24 38.5c4.2 3.3 11.8 3.3 16 0" fill="none" stroke="#2f7a38" stroke-width="2" stroke-linecap="round"/>
+                <circle cx="17" cy="34" r="2" fill="#3f9a46" opacity=".65"/>
+                <circle cx="49" cy="32" r="1.6" fill="#3f9a46" opacity=".55"/>
+              </svg>
+            </div>
+            <p class="overlay-kicker" id="overlayKicker">El clásico arcade</p>
+            <h2 class="overlay-title" id="overlayTitle">Lleva a la rana a casa</h2>
+            <p class="overlay-text" id="overlayText">Cruza la carretera, salta por troncos y tortugas, y ocupa los cinco hogares. El tiempo corre en cada intento.</p>
+            <div class="overlay-stats" id="overlayStats"></div>
+            <div class="overlay-controls" id="overlayControls">
+              <span class="key-cluster" aria-label="Teclas de dirección">
+                <kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd>
+              </span>
+              <span>o WASD para saltar</span>
+            </div>
+            <button class="overlay-action" id="overlayAction" type="button">
+              <span id="overlayActionLabel">Jugar</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M5 12h14M13 6l6 6-6 6"/>
+              </svg>
+            </button>
+            <p class="overlay-hint" id="overlayHint">Pulsa <kbd>Enter</kbd> para empezar</p>
+          </div>
+        </div>
+
+        <div class="toast" id="toast" aria-hidden="true">
+          <strong id="toastTitle"></strong>
+          <span id="toastText"></span>
+        </div>
+      </div>
+
+      <div class="underbar">
+        <p class="desktop-hint">
+          <span class="mini-keys" aria-hidden="true"><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd></span>
+          <span>Salta · <strong>P</strong> pausa · <strong>M</strong> sonido</span>
+        </p>
+        <p class="goal-hint"><span class="goal-dot" aria-hidden="true"></span> 5 hogares · 3 vidas</p>
+      </div>
+
+      <div class="touch-pad" id="touchPad" aria-label="Controles táctiles">
+        <button type="button" data-dir="up" aria-label="Saltar hacia arriba">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 14 6-6 6 6"/></svg>
+        </button>
+        <button type="button" data-dir="left" aria-label="Saltar hacia la izquierda">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg>
+        </button>
+        <button type="button" data-dir="down" aria-label="Saltar hacia abajo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 10 6 6 6-6"/></svg>
+        </button>
+        <button type="button" data-dir="right" aria-label="Saltar hacia la derecha">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m10 6 6 6-6 6"/></svg>
+        </button>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <p>Diseñado por Juan Guillermo Rivera Berrío con tecnología DeepSeek-V4.1-Flash</p>
+    </footer>
+  </main>
+
+  <p class="sr-only" id="liveStatus" aria-live="polite"></p>
+
+  <noscript>
+    <p style="text-align:center;color:#ffd16b;font-family:sans-serif">Activa JavaScript para jugar a Frogger.</p>
+  </noscript>
+
+  <script>
+  (() => {
+    "use strict";
+
+    /* ============================================================
+       CONSTANTES DEL TABLERO
+       ============================================================ */
+    const W = 800;
+    const H = 810;
+    const COLS = 13;
+    const COL_X0 = 120;
+    const COL_STEP = 50;
+    const ROW_Y = [44, 116, 174, 233, 292, 351, 408, 467, 525, 583, 641, 699, 769];
+    const START_COL = 6;
+    const START_ROW = 12;
+    const HOME_COLS = [0, 3, 6, 9, 12];
+    const HOME_CENTERS = HOME_COLS.map((col) => COL_X0 + col * COL_STEP);
+    const HOME_PAD_W = 84;
+    const HOME_PAD_H = 67;
+    const RIVER_TOP = 88;
+    const RIVER_BOTTOM = 380;
+    const MEDIAN_TOP = 380;
+    const MEDIAN_BOTTOM = 438;
+    const ROAD_TOP = 438;
+    const ROAD_BOTTOM = 728;
+    const START_TOP = 728;
+    const TIME_LIMIT = 30;
+    const START_LIVES = 3;
+    const HOP_TIME = 0.145;
+    const FROG_HALF_W = 14;
+    const FROG_HALF_H = 11;
+    const PLAY_MIN_X = 54;
+    const PLAY_MAX_X = 746;
+    const HOP_MIN_X = 70;
+    const HOP_MAX_X = 730;
+
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d", { alpha: false });
+    const stage = document.getElementById("stage");
+    const overlay = document.getElementById("overlay");
+    const overlayCard = overlay.querySelector(".overlay-card");
+    const overlayKicker = document.getElementById("overlayKicker");
+    const overlayTitle = document.getElementById("overlayTitle");
+    const overlayText = document.getElementById("overlayText");
+    const overlayStats = document.getElementById("overlayStats");
+    const overlayControls = document.getElementById("overlayControls");
+    const overlayAction = document.getElementById("overlayAction");
+    const overlayActionLabel = document.getElementById("overlayActionLabel");
+    const overlayHint = document.getElementById("overlayHint");
+    const toast = document.getElementById("toast");
+    const toastTitle = document.getElementById("toastTitle");
+    const toastText = document.getElementById("toastText");
+    const liveStatus = document.getElementById("liveStatus");
+
+    const scoreValue = document.getElementById("scoreValue");
+    const bestValue = document.getElementById("bestValue");
+    const levelValue = document.getElementById("levelValue");
+    const livesWrap = document.getElementById("livesWrap");
+    const timerPanel = document.getElementById("timerPanel");
+    const timeTrack = document.getElementById("timeTrack");
+    const timeFill = document.getElementById("timeFill");
+    const timeValue = document.getElementById("timeValue");
+    const soundBtn = document.getElementById("soundBtn");
+    const soundLabel = document.getElementById("soundLabel");
+    const pauseBtn = document.getElementById("pauseBtn");
+    const pauseLabel = document.getElementById("pauseLabel");
+    const touchPad = document.getElementById("touchPad");
+
+    /* ============================================================
+       UTILIDADES
+       ============================================================ */
+    const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+    const lerp = (a, b, t) => a + (b - a) * t;
+    const easeInOut = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
+    const padScore = (value) => String(Math.max(0, Math.floor(value))).padStart(6, "0");
+
+    function seededRandom(seed) {
+      let s = seed >>> 0;
+      return () => {
+        s += 0x6d2b79f5;
+        let t = s;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    function roundPath(x, y, w, h, r) {
+      const radius = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + w - radius, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+      ctx.lineTo(x + w, y + h - radius);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+      ctx.lineTo(x + radius, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+    }
+
+    function fillRound(x, y, w, h, r, fillStyle) {
+      roundPath(x, y, w, h, r);
+      ctx.fillStyle = fillStyle;
+      ctx.fill();
+    }
+
+    function strokeRound(x, y, w, h, r, strokeStyle, lineWidth = 1) {
+      roundPath(x, y, w, h, r);
+      ctx.strokeStyle = strokeStyle;
+      ctx.lineWidth = lineWidth;
+      ctx.stroke();
+    }
+
+    function ell(x, y, rx, ry) {
+      ctx.beginPath();
+      ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
+    }
+
+    function store(key, value) {
+      try { localStorage.setItem(key, value); } catch (_) { /* file:// puede bloquearlo */ }
+    }
+
+    function readStore(key, fallback = null) {
+      try {
+        const value = localStorage.getItem(key);
+        return value === null ? fallback : value;
+      } catch (_) {
+        return fallback;
+      }
+    }
+
+    /* ============================================================
+       SONIDO
+       ============================================================ */
+    let audioCtx = null;
+    let muted = readStore("frogger.muted", "0") === "1";
+
+    function ensureAudio() {
+      if (muted) return null;
+      try {
+        if (!audioCtx) {
+          const AudioCtor = window.AudioContext || window.webkitAudioContext;
+          if (!AudioCtor) return null;
+          audioCtx = new AudioCtor();
+        }
+        if (audioCtx.state === "suspended") audioCtx.resume();
+        return audioCtx;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function tone(freq, options = {}) {
+      const ac = ensureAudio();
+      if (!ac) return;
+      const {
+        dur = 0.1,
+        type = "triangle",
+        volume = 0.046,
+        slideTo = null,
+        delay = 0,
+      } = options;
+      const start = ac.currentTime + delay;
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(Math.max(30, freq), start);
+      if (slideTo !== null) {
+        osc.frequency.exponentialRampToValueAtTime(Math.max(30, slideTo), start + dur);
+      }
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, volume), start + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+      osc.connect(gain);
+      gain.connect(ac.destination);
+      osc.start(start);
+      osc.stop(start + dur + 0.035);
+    }
+
+    function soundHop() {
+      tone(360, { dur: 0.075, type: "triangle", volume: 0.033, slideTo: 590 });
+      tone(720, { dur: 0.045, type: "sine", volume: 0.015, delay: 0.035, slideTo: 880 });
+    }
+
+    function soundSplash() {
+      tone(620, { dur: 0.28, type: "sine", volume: 0.055, slideTo: 110 });
+      tone(180, { dur: 0.34, type: "triangle", volume: 0.038, slideTo: 65, delay: 0.025 });
+    }
+
+    function soundCrash() {
+      tone(170, { dur: 0.29, type: "sawtooth", volume: 0.06, slideTo: 48 });
+      tone(90, { dur: 0.24, type: "square", volume: 0.032, slideTo: 42, delay: 0.02 });
+    }
+
+    function soundBump() {
+      tone(150, { dur: 0.16, type: "square", volume: 0.038, slideTo: 70 });
+    }
+
+    function soundTick() {
+      tone(980, { dur: 0.045, type: "square", volume: 0.021, slideTo: 760 });
+    }
+
+    function soundHome() {
+      [523.25, 659.25, 783.99, 1046.5].forEach((freq, index) => {
+        tone(freq, {
+          dur: 0.2,
+          type: "triangle",
+          volume: 0.045,
+          delay: index * 0.072,
+          slideTo: freq * 1.01,
+        });
+      });
+    }
+
+    function soundLevelUp() {
+      [392, 523.25, 659.25, 783.99, 1046.5].forEach((freq, index) => {
+        tone(freq, {
+          dur: 0.24,
+          type: index % 2 ? "sine" : "triangle",
+          volume: 0.043,
+          delay: index * 0.085,
+        });
+      });
+    }
+
+    function soundStart() {
+      [261.63, 392, 523.25].forEach((freq, index) => {
+        tone(freq, { dur: 0.12, type: "triangle", volume: 0.036, delay: index * 0.075, slideTo: freq * 1.02 });
+      });
+    }
+
+    function updateSoundButton() {
+      soundBtn.setAttribute("aria-pressed", muted ? "false" : "true");
+      soundBtn.setAttribute("aria-label", muted ? "Activar sonido" : "Desactivar sonido");
+      soundLabel.textContent = muted ? "Silencio" : "Sonido";
+      soundBtn.title = muted ? "Activar sonido" : "Desactivar sonido";
+    }
+
+    function toggleSound() {
+      muted = !muted;
+      store("frogger.muted", muted ? "1" : "0");
+      updateSoundButton();
+      if (!muted) {
+        ensureAudio();
+        tone(520, { dur: 0.07, type: "sine", volume: 0.035, slideTo: 780 });
+      }
+    }
+
+    /* ============================================================
+       ESTADO
+       ============================================================ */
+    const game = {
+      state: "menu",
+      overlayMode: "start",
+      score: 0,
+      best: parseInt(readStore("frogger.best", "0"), 10) || 0,
+      lives: START_LIVES,
+      level: 1,
+      homes: [false, false, false, false, false],
+      timeLeft: TIME_LIMIT,
+      maxRow: START_ROW,
+      stateTimer: 0,
+      deathCause: null,
+      deathAt: { x: 0, y: 0 },
+      lastTick: null,
+      lastHome: -1,
+      levelBonus: 0,
+      particles: [],
+      sceneTime: 0,
+      hadFirstInput: false,
+    };
+
+    const frog = {
+      row: START_ROW,
+      col: START_COL,
+      x: COL_X0 + START_COL * COL_STEP,
+      y: ROW_Y[START_ROW],
+      startX: COL_X0 + START_COL * COL_STEP,
+      startY: ROW_Y[START_ROW],
+      targetX: COL_X0 + START_COL * COL_STEP,
+      targetY: ROW_Y[START_ROW],
+      hopping: false,
+      hopT: 0,
+      facing: "up",
+      platform: null,
+      bufferedMove: null,
+    };
+
+    let roadLanes = [];
+    let riverLanes = [];
+    let particleBurstId = 0;
+    let toastTimer = null;
+    let scoreBumpTimer = null;
+    let lastHud = { score: -1, best: -1, level: -1, lives: -1 };
+
+    const deco = {
+      hedgeLeaves: [],
+      hedgeDots: [],
+      riverGlints: [],
+      roadSpecks: [],
+      medianPlants: [],
+      startPlants: [],
+      roadArrows: [],
+      homeLights: [],
+    };
+
+    /* ============================================================
+       CONSTRUCCIÓN DEL MUNDO
+       ============================================================ */
+    const VEHICLE_SPECS = {
+      car: { w: 82, h: 35 },
+      truck: { w: 154, h: 46 },
+      excavator: { w: 118, h: 50 },
+    };
+
+    function buildWorld() {
+      roadLanes = [
+        {
+          row: 7,
+          y: ROW_Y[7],
+          dir: 1,
+          speed: 72,
+          vehicles: [
+            { type: "car", x: 70, color: "#ff7068" },
+            { type: "car", x: 370, color: "#53cfe0" },
+            { type: "excavator", x: 650, color: "#f3b82f" },
+          ],
+        },
+        {
+          row: 8,
+          y: ROW_Y[8],
+          dir: -1,
+          speed: 102,
+          vehicles: [
+            { type: "car", x: 40, color: "#f7c851" },
+            { type: "truck", x: 250, color: "#f07a52" },
+            { type: "car", x: 560, color: "#9e8aff" },
+            { type: "car", x: 755, color: "#8ff3b6" },
+          ],
+        },
+        {
+          row: 9,
+          y: ROW_Y[9],
+          dir: 1,
+          speed: 56,
+          vehicles: [
+            { type: "excavator", x: 30, color: "#f3b82f" },
+            { type: "car", x: 300, color: "#eaf5df" },
+            { type: "truck", x: 470, color: "#56c8a2" },
+            { type: "car", x: 690, color: "#ff9560" },
+          ],
+        },
+        {
+          row: 10,
+          y: ROW_Y[10],
+          dir: -1,
+          speed: 134,
+          vehicles: [
+            { type: "car", x: 100, color: "#ff6a88" },
+            { type: "car", x: 340, color: "#6fe1e8" },
+            { type: "car", x: 580, color: "#ffd36a" },
+            { type: "car", x: 790, color: "#b0ff72" },
+          ],
+        },
+        {
+          row: 11,
+          y: ROW_Y[11],
+          dir: 1,
+          speed: 86,
+          vehicles: [
+            { type: "truck", x: 70, color: "#f46e4d" },
+            { type: "car", x: 360, color: "#68d8dc" },
+            { type: "excavator", x: 560, color: "#f3b82f" },
+            { type: "car", x: 760, color: "#f2d56b" },
+          ],
+        },
+      ];
+
+      roadLanes.forEach((lane) => {
+        lane.vehicles.forEach((vehicle, index) => {
+          const spec = VEHICLE_SPECS[vehicle.type];
+          vehicle.w = spec.w;
+          vehicle.h = spec.h;
+          vehicle.id = `${lane.row}-${index}`;
+          vehicle.y = lane.y;
+          vehicle.dir = lane.dir;
+          vehicle.lastDx = 0;
+        });
+      });
+
+      riverLanes = [
+        {
+          row: 1,
+          y: ROW_Y[1],
+          dir: -1,
+          speed: 52,
+          platforms: [
+            { type: "log", x: -20, w: 190, phase: 0.4 },
+            { type: "log", x: 230, w: 180, phase: 2.1 },
+            { type: "log", x: 500, w: 190, phase: 4.2 },
+            { type: "log", x: 740, w: 180, phase: 1.2 },
+          ],
+        },
+        {
+          row: 2,
+          y: ROW_Y[2],
+          dir: 1,
+          speed: 40,
+          platforms: [
+            { type: "turtle", x: 20, w: 132, phase: 0.8 },
+            { type: "turtle", x: 250, w: 132, phase: 2.6 },
+            { type: "turtle", x: 480, w: 132, phase: 4.8 },
+            { type: "turtle", x: 690, w: 132, phase: 1.7 },
+          ],
+        },
+        {
+          row: 3,
+          y: ROW_Y[3],
+          dir: 1,
+          speed: 64,
+          platforms: [
+            { type: "log", x: 50, w: 200, phase: 1.1 },
+            { type: "log", x: 340, w: 180, phase: 3.5 },
+            { type: "log", x: 610, w: 180, phase: 5.4 },
+          ],
+        },
+        {
+          row: 4,
+          y: ROW_Y[4],
+          dir: -1,
+          speed: 48,
+          platforms: [
+            { type: "turtle", x: 0, w: 132, phase: 0.2 },
+            { type: "turtle", x: 240, w: 132, phase: 2.9 },
+            { type: "turtle", x: 480, w: 132, phase: 5.1 },
+            { type: "turtle", x: 710, w: 132, phase: 1.5 },
+          ],
+        },
+        {
+          row: 5,
+          y: ROW_Y[5],
+          dir: -1,
+          speed: 72,
+          platforms: [
+            { type: "log", x: -40, w: 200, phase: 3.1 },
+            { type: "log", x: 250, w: 180, phase: 0.6 },
+            { type: "log", x: 540, w: 190, phase: 2.4 },
+          ],
+        },
+      ];
+
+      riverLanes.forEach((lane) => {
+        lane.platforms.forEach((platform, index) => {
+          platform.id = `${lane.row}-${index}`;
+          platform.row = lane.row;
+          platform.y = lane.y;
+          platform.dir = lane.dir;
+          platform.lastDx = 0;
+        });
+      });
+    }
+
+    function buildDecorations() {
+      const rng = seededRandom(0xfacef20);
+      deco.hedgeLeaves.length = 0;
+      for (let i = 0; i < 90; i += 1) {
+        const x = 8 + rng() * (W - 16);
+        const y = 4 + rng() * 80;
+        let inOpening = false;
+        for (const center of HOME_CENTERS) {
+          if (Math.abs(x - center) < HOME_PAD_W / 2 + 11) inOpening = true;
+        }
+        if (inOpening) continue;
+        deco.hedgeLeaves.push({
+          x,
+          y,
+          r: 3 + rng() * 8,
+          light: rng() > 0.65,
+          tilt: rng() * Math.PI,
+        });
+      }
+      deco.hedgeDots.length = 0;
+      for (let i = 0; i < 34; i += 1) {
+        deco.hedgeDots.push({ x: 8 + rng() * 784, y: 8 + rng() * 73, r: rng() * 1.7 + 0.6 });
+      }
+      deco.riverGlints.length = 0;
+      for (let i = 0; i < 54; i += 1) {
+        deco.riverGlints.push({
+          x: 34 + rng() * 732,
+          y: RIVER_TOP + 7 + rng() * (RIVER_BOTTOM - RIVER_TOP - 14),
+          w: 5 + rng() * 22,
+          phase: rng() * Math.PI * 2,
+        });
+      }
+      deco.roadSpecks.length = 0;
+      for (let i = 0; i < 150; i += 1) {
+        deco.roadSpecks.push({
+          x: 34 + rng() * 732,
+          y: ROAD_TOP + 5 + rng() * (ROAD_BOTTOM - ROAD_TOP - 10),
+          r: 0.4 + rng() * 1.2,
+          a: 0.025 + rng() * 0.07,
+        });
+      }
+      deco.medianPlants.length = 0;
+      for (let i = 0; i < 42; i += 1) {
+        deco.medianPlants.push({
+          x: 34 + rng() * 732,
+          y: MEDIAN_TOP + 6 + rng() * (MEDIAN_BOTTOM - MEDIAN_TOP - 12),
+          h: 3 + rng() * 9,
+          a: rng(),
+        });
+      }
+      deco.startPlants.length = 0;
+      for (let i = 0; i < 42; i += 1) {
+        deco.startPlants.push({
+          x: 24 + rng() * 752,
+          y: START_TOP + 9 + rng() * (H - START_TOP - 20),
+          h: 3 + rng() * 9,
+          flower: rng() > 0.72,
+        });
+      }
+      deco.homeLights.length = 0;
+      for (const center of HOME_CENTERS) {
+        deco.homeLights.push({ x: center, y: 5.5, phase: rng() * Math.PI * 2 });
+      }
+      deco.roadArrows.length = 0;
+      for (let lane = 0; lane < 5; lane += 1) {
+        const dir = roadLanes[lane] ? roadLanes[lane].dir : lane % 2 ? -1 : 1;
+        for (let i = 0; i < 3; i += 1) {
+          deco.roadArrows.push({ x: 120 + i * 255, y: ROW_Y[7 + lane], dir });
+        }
+      }
+    }
+
+    /* ============================================================
+       HUD
+       ============================================================ */
+    const lifeIcon = `
+      <svg viewBox="0 0 30 30" aria-hidden="true">
+        <circle cx="15" cy="18" r="9.1" fill="#89e765" stroke="#265e32" stroke-width="1.4"/>
+        <circle cx="9.7" cy="10.5" r="4.7" fill="#89e765" stroke="#265e32" stroke-width="1.4"/>
+        <circle cx="20.3" cy="10.5" r="4.7" fill="#89e765" stroke="#265e32" stroke-width="1.4"/>
+        <circle cx="9.7" cy="10.5" r="2.1" fill="#f7fff1"/>
+        <circle cx="20.3" cy="10.5" r="2.1" fill="#f7fff1"/>
+        <circle cx="10.1" cy="11" r="1" fill="#08200f"/>
+        <circle cx="19.9" cy="11" r="1" fill="#08200f"/>
+        <path d="M11.3 18.7c2.1 1.5 5.3 1.5 7.4 0" fill="none" stroke="#367841" stroke-width="1.1" stroke-linecap="round"/>
+        <path d="M7 23c-1.8 0-3.2 1.4-2.4 2.6.6.9 2.3 1 3.3.2l1.5-1.3" fill="#69c65b" stroke="#265e32" stroke-width="1.1" stroke-linejoin="round"/>
+        <path d="M23 23c1.8 0 3.2 1.4 2.4 2.6-.6.9-2.3 1-3.3.2l-1.5-1.3" fill="#69c65b" stroke="#265e32" stroke-width="1.1" stroke-linejoin="round"/>
+      </svg>`;
+
+    function renderLives() {
+      livesWrap.textContent = "";
+      if (game.lives <= 0) {
+        const none = document.createElement("span");
+        none.className = "no-lives";
+        none.textContent = "0";
+        livesWrap.appendChild(none);
+        livesWrap.setAttribute("aria-label", "Sin vidas");
+        return;
+      }
+      for (let i = 0; i < game.lives; i += 1) {
+        const icon = document.createElement("span");
+        icon.className = "life-frog";
+        icon.innerHTML = lifeIcon;
+        livesWrap.appendChild(icon);
+      }
+      livesWrap.setAttribute("aria-label", `${game.lives} ${game.lives === 1 ? "vida" : "vidas"}`);
+    }
+
+    function updateHud(force = false) {
+      if (force || lastHud.score !== game.score) {
+        scoreValue.textContent = padScore(game.score);
+        if (!force && game.score > lastHud.score && lastHud.score >= 0) {
+          scoreValue.classList.remove("bump");
+          void scoreValue.offsetWidth;
+          scoreValue.classList.add("bump");
+          clearTimeout(scoreBumpTimer);
+          scoreBumpTimer = setTimeout(() => scoreValue.classList.remove("bump"), 240);
+        }
+        lastHud.score = game.score;
+      }
+      if (force || lastHud.best !== game.best) {
+        bestValue.textContent = padScore(game.best);
+        lastHud.best = game.best;
+      }
+      if (force || lastHud.level !== game.level) {
+        levelValue.textContent = String(game.level).padStart(2, "0");
+        lastHud.level = game.level;
+      }
+      if (force || lastHud.lives !== game.lives) {
+        renderLives();
+        lastHud.lives = game.lives;
+      }
+
+      const ratio = clamp(game.timeLeft / TIME_LIMIT, 0, 1);
+      timeFill.style.transform = `scaleX(${ratio.toFixed(4)})`;
+      const seconds = Math.max(0, Math.ceil(game.timeLeft - 1e-7));
+      timeValue.textContent = String(seconds).padStart(2, "0");
+      timeTrack.setAttribute("aria-valuenow", String(seconds));
+      timerPanel.classList.toggle("is-warning", ratio <= 0.5 && ratio > 0.2);
+      timerPanel.classList.toggle("is-danger", ratio <= 0.2);
+
+      const canPause = game.state === "playing" || game.state === "paused";
+      pauseBtn.disabled = !canPause;
+      const paused = game.state === "paused";
+      pauseBtn.classList.toggle("is-active", paused);
+      pauseLabel.textContent = paused ? "Seguir" : "Pausa";
+      pauseBtn.setAttribute("aria-label", paused ? "Continuar juego" : "Pausar juego");
+    }
+
+    function announce(message) {
+      liveStatus.textContent = "";
+      window.setTimeout(() => { liveStatus.textContent = message; }, 30);
+    }
+
+    function showToast(title, text, tone = "normal", duration = 1400) {
+      clearTimeout(toastTimer);
+      toastTitle.textContent = title;
+      toastText.textContent = text || "";
+      toast.classList.remove("tone-danger", "tone-gold");
+      if (tone === "danger") toast.classList.add("tone-danger");
+      if (tone === "gold") toast.classList.add("tone-gold");
+      toast.classList.add("is-visible");
+      toast.setAttribute("aria-hidden", "false");
+      toastTimer = setTimeout(() => {
+        toast.classList.remove("is-visible");
+        toast.setAttribute("aria-hidden", "true");
+      }, duration);
+    }
+
+    function hideToast() {
+      clearTimeout(toastTimer);
+      toast.classList.remove("is-visible");
+      toast.setAttribute("aria-hidden", "true");
+    }
+
+    function addOverlayStat(value, label) {
+      const item = document.createElement("div");
+      item.className = "overlay-stat";
+      const strong = document.createElement("strong");
+      strong.textContent = value;
+      const span = document.createElement("span");
+      span.textContent = label;
+      item.append(strong, span);
+      overlayStats.appendChild(item);
+    }
+
+    function showOverlay(mode) {
+      game.overlayMode = mode;
+      overlay.hidden = false;
+      const touchUi = window.matchMedia("(pointer: coarse)").matches;
+      overlayStats.textContent = "";
+      overlayControls.hidden = true;
+
+      if (mode === "start") {
+        overlayKicker.textContent = "El clásico arcade";
+        overlayTitle.textContent = "Lleva a la rana a casa";
+        overlayText.textContent = "Cruza la carretera, salta por troncos y tortugas, y ocupa los cinco hogares. El tiempo corre en cada intento.";
+        addOverlayStat("5", "Hogares");
+        addOverlayStat(String(START_LIVES), "Vidas");
+        addOverlayStat(String(TIME_LIMIT), "Segundos");
+        overlayActionLabel.textContent = "Jugar";
+        overlayHint.innerHTML = touchUi ? "Toca <strong>Jugar</strong> para empezar" : "Pulsa <kbd>Enter</kbd> para empezar";
+        overlayControls.hidden = false;
+      } else if (mode === "pause") {
+        overlayKicker.textContent = "Pausa";
+        overlayTitle.textContent = "El río espera";
+        overlayText.textContent = "La rana está a salvo por ahora. Tómate un respiro y continúa cuando quieras.";
+        addOverlayStat(padScore(game.score), "Puntos");
+        addOverlayStat(String(game.level).padStart(2, "0"), "Nivel");
+        addOverlayStat(String(game.homes.filter(Boolean).length) + "/5", "Hogares");
+        overlayActionLabel.textContent = "Continuar";
+        overlayHint.innerHTML = touchUi ? "Toca <strong>Continuar</strong> para seguir" : "Pulsa <kbd>P</kbd> o <kbd>Esc</kbd> para seguir";
+      } else if (mode === "gameover") {
+        overlayKicker.textContent = "Fin del juego";
+        overlayTitle.textContent = "La rana se quedó sin vidas";
+        overlayText.textContent = "El río no perdona, pero cada partida enseña algo nuevo. ¿Volvemos a intentarlo?";
+        addOverlayStat(padScore(game.score), "Puntos");
+        addOverlayStat(padScore(game.best), "Récord");
+        addOverlayStat(String(game.homes.filter(Boolean).length) + "/5", "Hogares");
+        overlayActionLabel.textContent = "Reintentar";
+        overlayHint.innerHTML = touchUi ? "Toca <strong>Reintentar</strong> para volver a jugar" : "Pulsa <kbd>Enter</kbd> para volver a jugar";
+      } else if (mode === "levelclear") {
+        overlayKicker.textContent = "Nivel superado";
+        overlayTitle.textContent = "¡Los cinco hogares están a salvo!";
+        overlayText.textContent = `Has completado el nivel ${game.level}. La corriente se acelera y los vehículos no descansan: prepárate para el siguiente cruce.`;
+        addOverlayStat("+" + game.levelBonus, "Bonus");
+        addOverlayStat(padScore(game.score), "Puntos");
+        addOverlayStat(String(game.level + 1).padStart(2, "0"), "Siguiente");
+        overlayActionLabel.textContent = "Siguiente nivel";
+        overlayHint.innerHTML = touchUi ? "Toca <strong>Siguiente nivel</strong> para continuar" : "Pulsa <kbd>Enter</kbd> para continuar";
+      }
+
+      updateHud();
+      window.setTimeout(() => {
+        if (!overlay.hidden) overlayAction.focus({ preventScroll: true });
+      }, 60);
+    }
+
+    function hideOverlay() {
+      overlay.hidden = true;
+      game.overlayMode = null;
+    }
+
+    /* ============================================================
+       PARTÍCULAS
+       ============================================================ */
+    function spawnParticles(x, y, kind) {
+      const rng = Math.random;
+      const count = kind === "water" ? 22 : kind === "home" ? 24 : 18;
+      for (let i = 0; i < count; i += 1) {
+        const angle = rng() * Math.PI * 2;
+        let speed = 28 + rng() * 95;
+        let color = "#baff75";
+        let gravity = 125;
+        let size = 1.4 + rng() * 2.8;
+        if (kind === "water") {
+          color = rng() > 0.35 ? "#87eff0" : "#c9ffff";
+          speed = 18 + rng() * 75;
+          gravity = 190;
+          size = 1.2 + rng() * 3.2;
+        } else if (kind === "crash") {
+          color = rng() > 0.45 ? "#ffd56c" : "#ff775f";
+          speed = 35 + rng() * 145;
+          gravity = 160;
+          size = 1 + rng() * 2.8;
+        } else if (kind === "home") {
+          color = rng() > 0.42 ? "#ffe287" : "#c8ff91";
+          speed = 26 + rng() * 105;
+          gravity = 72;
+          size = 1.2 + rng() * 2.4;
+        } else if (kind === "hedge") {
+          color = rng() > 0.5 ? "#74d06b" : "#b4e77b";
+          gravity = 120;
+        }
+        game.particles.push({
+          id: ++particleBurstId,
+          x,
+          y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - 42,
+          life: 0.45 + rng() * 0.55,
+          maxLife: 0.9,
+          size,
+          color,
+          gravity,
+          kind,
+        });
+      }
+    }
+
+    function updateParticles(dt) {
+      for (let i = game.particles.length - 1; i >= 0; i -= 1) {
+        const p = game.particles[i];
+        p.life -= dt;
+        if (p.life <= 0) {
+          game.particles.splice(i, 1);
+          continue;
+        }
+        p.vy += p.gravity * dt;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+      }
+    }
+
+    /* ============================================================
+       LÓGICA
+       ============================================================ */
+    function difficulty() {
+      return Math.min(1.62, 1 + (game.level - 1) * 0.085);
+    }
+
+    function resetFrog() {
+      frog.row = START_ROW;
+      frog.col = START_COL;
+      frog.x = COL_X0 + START_COL * COL_STEP;
+      frog.y = ROW_Y[START_ROW];
+      frog.startX = frog.x;
+      frog.startY = frog.y;
+      frog.targetX = frog.x;
+      frog.targetY = frog.y;
+      frog.hopping = false;
+      frog.hopT = 0;
+      frog.facing = "up";
+      frog.platform = null;
+      frog.bufferedMove = null;
+    }
+
+    function startAttempt(announceAttempt = false) {
+      resetFrog();
+      game.timeLeft = TIME_LIMIT;
+      game.maxRow = START_ROW;
+      game.lastTick = null;
+      game.state = "playing";
+      game.stateTimer = 0;
+      game.deathCause = null;
+      hideToast();
+      hideOverlay();
+      updateHud();
+      if (announceAttempt) announce(`Nuevo intento. Te quedan ${game.lives} vidas.`);
+    }
+
+    function startNewGame() {
+      ensureAudio();
+      game.score = 0;
+      game.lives = START_LIVES;
+      game.level = 1;
+      game.homes = [false, false, false, false, false];
+      game.particles.length = 0;
+      game.levelBonus = 0;
+      game.lastHome = -1;
+      game.maxRow = START_ROW;
+      buildWorld();
+      buildDecorations();
+      lastHud = { score: -1, best: -1, level: -1, lives: -1 };
+      startAttempt(false);
+      soundStart();
+      updateHud(true);
+      announce("Juego iniciado. Nivel 1. Tienes 3 vidas. Llega a los cinco hogares.");
+      canvas.focus({ preventScroll: true });
+    }
+
+    function nextLevel() {
+      ensureAudio();
+      game.level += 1;
+      game.homes = [false, false, false, false, false];
+      game.lastHome = -1;
+      game.levelBonus = 0;
+      game.particles.length = 0;
+      buildWorld();
+      buildDecorations();
+      startAttempt(false);
+      soundLevelUp();
+      updateHud(true);
+      announce(`Nivel ${game.level}. La velocidad aumenta.`);
+      canvas.focus({ preventScroll: true });
+    }
+
+    function saveBest() {
+      if (game.score > game.best) {
+        game.best = game.score;
+        store("frogger.best", String(game.best));
+        updateHud();
+      }
+    }
+
+    function addScore(points) {
+      game.score += points;
+      if (game.score > game.best) {
+        game.best = game.score;
+        saveBest();
+      }
+      updateHud();
+    }
+
+    function colToX(col) {
+      return COL_X0 + col * COL_STEP;
+    }
+
+    function homeIndexAt(x) {
+      for (let i = 0; i < HOME_CENTERS.length; i += 1) {
+        if (Math.abs(x - HOME_CENTERS[i]) <= HOME_PAD_W / 2 - 2) return i;
+      }
+      return -1;
+    }
+
+    function findPlatform(row, x) {
+      const lane = riverLanes.find((item) => item.row === row);
+      if (!lane) return null;
+      for (const platform of lane.platforms) {
+        if (x >= platform.x - 4 && x <= platform.x + platform.w + 4) return platform;
+      }
+      return null;
+    }
+
+    function vehicleHitTest() {
+      if (frog.y < ROAD_TOP - 3 || frog.y > ROAD_BOTTOM + 3) return null;
+      const fx1 = frog.x - FROG_HALF_W;
+      const fx2 = frog.x + FROG_HALF_W;
+      const fy1 = frog.y - FROG_HALF_H;
+      const fy2 = frog.y + FROG_HALF_H;
+      for (const lane of roadLanes) {
+        for (const vehicle of lane.vehicles) {
+          if (vehicle.x + vehicle.w < 24 || vehicle.x > W - 24) continue;
+          const vx1 = vehicle.x + 7;
+          const vx2 = vehicle.x + vehicle.w - 7;
+          const vy1 = vehicle.y - vehicle.h / 2 + 6;
+          const vy2 = vehicle.y + vehicle.h / 2 - 5;
+          if (fx2 > vx1 && fx1 < vx2 && fy2 > vy1 && fy1 < vy2) return vehicle;
+        }
+      }
+      return null;
+    }
+
+    function die(cause) {
+      if (game.state !== "playing") return;
+      game.state = "dying";
+      game.stateTimer = 1.42;
+      game.deathCause = cause;
+      game.deathAt.x = frog.x;
+      game.deathAt.y = frog.y;
+      frog.hopping = false;
+      frog.platform = null;
+      game.lives = Math.max(0, game.lives - 1);
+
+      const messages = {
+        car: ["¡Atropellada!", "Un vehículo se cruzó en el camino."],
+        water: ["¡Splash!", "La rana cayó al agua."],
+        carried: ["¡La corriente se la llevó!", "No te acerques demasiado al borde."],
+        hedge: ["¡Mala puntería!", "Solo los cinco hogares son seguros."],
+        timeout: ["¡Sin tiempo!", "La barra de tiempo llegó a cero."],
+      };
+      const message = messages[cause] || messages.car;
+
+      if (cause === "water" || cause === "carried") {
+        spawnParticles(game.deathAt.x, Math.min(game.deathAt.y + 10, RIVER_BOTTOM - 8), "water");
+        soundSplash();
+      } else if (cause === "hedge") {
+        spawnParticles(game.deathAt.x, game.deathAt.y + 4, "hedge");
+        soundBump();
+      } else if (cause === "timeout") {
+        spawnParticles(game.deathAt.x, game.deathAt.y, "crash");
+        soundBump();
+      } else {
+        spawnParticles(game.deathAt.x, game.deathAt.y, "crash");
+        soundCrash();
+      }
+
+      showToast(message[0], message[1], "danger", 1380);
+      announce(`${message[0]} ${game.lives > 0 ? `Te quedan ${game.lives} vidas.` : "No quedan vidas."}`);
+      updateHud();
+    }
+
+    function loseAtHomeHedge() {
+      die("hedge");
+    }
+
+    function secureHome(index) {
+      if (game.state !== "playing") return;
+      game.homes[index] = true;
+      game.lastHome = index;
+      game.state = "home";
+      game.stateTimer = 0.98;
+
+      const timeBonus = Math.ceil(game.timeLeft) * 5;
+      const housePoints = 200 + timeBonus;
+      addScore(housePoints);
+
+      const occupied = game.homes.filter(Boolean).length;
+      let title = `¡Hogar ${occupied} de 5!`;
+      let text = `+${housePoints} puntos · ${timeBonus} de bonus por tiempo`;
+      spawnParticles(HOME_CENTERS[index], ROW_Y[0] + 2, "home");
+      soundHome();
+
+      if (occupied === 5) {
+        game.levelBonus = 1000;
+        addScore(game.levelBonus);
+        game.stateTimer = 1.15;
+        title = "¡Los cinco hogares!";
+        text = `Bonus de nivel +1000 · ${padScore(game.score)} puntos`;
+        soundLevelUp();
+        announce("¡Nivel completado! Los cinco hogares están ocupados.");
+      } else {
+        announce(`Hogar ${occupied} de 5 asegurado.`);
+      }
+      showToast(title, text, "gold", 1300);
+      updateHud();
+    }
+
+    function onLand() {
+      if (game.state !== "playing") return;
+
+      if (frog.row === 0) {
+        const homeIndex = homeIndexAt(frog.x);
+        if (homeIndex === -1) {
+          loseAtHomeHedge();
+        } else if (game.homes[homeIndex]) {
+          frog.row = 1;
+          frog.y = ROW_Y[1];
+        } else {
+          secureHome(homeIndex);
+        }
+        return;
+      }
+
+      if (frog.row >= 1 && frog.row <= 5) {
+        const platform = findPlatform(frog.row, frog.x);
+        if (!platform) {
+          die("water");
+          return;
+        }
+        frog.platform = platform;
+      } else {
+        frog.platform = null;
+      }
+
+      if (frog.row >= 7 && frog.row <= 11) {
+        const hit = vehicleHitTest();
+        if (hit) {
+          die("car");
+          return;
+        }
+      }
+
+      if (frog.row < game.maxRow) {
+        const progress = game.maxRow - frog.row;
+        game.maxRow = frog.row;
+        addScore(progress * 10);
+      }
+
+      updateHud();
+
+      if (frog.bufferedMove) {
+        const buffered = frog.bufferedMove;
+        frog.bufferedMove = null;
+        window.setTimeout(() => {
+          if (game.state === "playing" && !frog.hopping) performMove(buffered.dr, buffered.dc);
+        }, 0);
+      }
+    }
+
+    function performMove(dr, dc) {
+      if (game.state !== "playing") return;
+      const nr = frog.row + dr;
+      if (nr < 0 || nr >= ROW_Y.length) return;
+
+      // Los saltos horizontales son relativos a la posición actual: si un
+      // tronco ha arrastrado a la rana, no debe teletransportarla a la rejilla.
+      const targetX = dc === 0
+        ? frog.x
+        : clamp(frog.x + dc * COL_STEP, HOP_MIN_X, HOP_MAX_X);
+      if (Math.abs(targetX - frog.x) < 0.01 && dc !== 0) return;
+      const nc = clamp(Math.round((targetX - COL_X0) / COL_STEP), 0, COLS - 1);
+
+      if (nr === 0) {
+        const hIndex = homeIndexAt(targetX);
+        if (hIndex !== -1 && game.homes[hIndex]) {
+          showToast("Hogar ocupado", "Prueba con otro de los cinco nenúfares.", "normal", 1100);
+          soundBump();
+          return;
+        }
+        // Si no hay hogar bajo la rana, el seto será su destino (y su error).
+      }
+
+      frog.row = nr;
+      frog.col = nc;
+      frog.startX = frog.x;
+      frog.startY = frog.y;
+      frog.targetX = targetX;
+      frog.targetY = ROW_Y[nr];
+      frog.hopping = true;
+      frog.hopT = 0;
+      frog.platform = null;
+      if (dr < 0) frog.facing = "up";
+      else if (dr > 0) frog.facing = "down";
+      else if (dc < 0) frog.facing = "left";
+      else if (dc > 0) frog.facing = "right";
+      soundHop();
+    }
+
+    function requestMove(dr, dc) {
+      if (game.state !== "playing") return;
+      ensureAudio();
+      if (frog.hopping) {
+        frog.bufferedMove = { dr, dc };
+        return;
+      }
+      performMove(dr, dc);
+    }
+
+    function updateHop(dt) {
+      frog.hopT += dt / HOP_TIME;
+      const t = Math.min(1, frog.hopT);
+      const eased = easeInOut(t);
+      frog.x = lerp(frog.startX, frog.targetX, eased);
+      frog.y = lerp(frog.startY, frog.targetY, eased) - Math.sin(Math.PI * t) * 10;
+      if (t >= 1) {
+        frog.x = frog.targetX;
+        frog.y = frog.targetY;
+        frog.hopping = false;
+        frog.hopT = 0;
+        onLand();
+      }
+    }
+
+    function updateWorld(dt) {
+      const speedFactor = difficulty();
+      for (const lane of roadLanes) {
+        for (const vehicle of lane.vehicles) {
+          const dx = lane.dir * lane.speed * speedFactor * dt;
+          vehicle.x += dx;
+          vehicle.lastDx = dx;
+          if (lane.dir > 0 && vehicle.x > W + 230) {
+            vehicle.x = -vehicle.w - 230;
+          } else if (lane.dir < 0 && vehicle.x + vehicle.w < -230) {
+            vehicle.x = W + 230;
+          }
+        }
+      }
+      for (const lane of riverLanes) {
+        for (const platform of lane.platforms) {
+          const dx = lane.dir * lane.speed * speedFactor * dt;
+          platform.x += dx;
+          platform.lastDx = dx;
+          if (lane.dir > 0 && platform.x > W + 230) {
+            platform.x = -platform.w - 230;
+          } else if (lane.dir < 0 && platform.x + platform.w < -230) {
+            platform.x = W + 230;
+          }
+        }
+      }
+    }
+
+    function checkCarCollision() {
+      const hit = vehicleHitTest();
+      if (hit) {
+        die("car");
+        return true;
+      }
+      return false;
+    }
+
+    function checkFrogBounds() {
+      if (frog.x < PLAY_MIN_X || frog.x > PLAY_MAX_X) {
+        die("carried");
+        return true;
+      }
+      return false;
+    }
+
+    function updateTimer(dt) {
+      game.timeLeft = Math.max(0, game.timeLeft - dt);
+      const tick = Math.ceil(game.timeLeft - 1e-7);
+      if (game.timeLeft > 0 && game.timeLeft <= 5.02 && tick > 0 && game.lastTick !== tick) {
+        game.lastTick = tick;
+        soundTick();
+      }
+      if (game.timeLeft <= 0) {
+        game.timeLeft = 0;
+        die("timeout");
+      }
+    }
+
+    /* ============================================================
+       BUCLE PRINCIPAL
+       ============================================================ */
+    function update(dt) {
+      game.sceneTime += dt;
+
+      if (game.state === "menu") {
+        updateWorld(dt);
+      } else if (game.state === "playing") {
+        updateWorld(dt);
+
+        if (frog.platform && !frog.hopping) {
+          frog.x += frog.platform.lastDx;
+          if (checkFrogBounds()) return;
+        }
+
+        if (frog.hopping) {
+          updateHop(dt);
+          if (game.state !== "playing") return;
+        } else if (frog.row >= 1 && frog.row <= 5) {
+          const platform = findPlatform(frog.row, frog.x);
+          if (!platform) {
+            die("water");
+            return;
+          }
+          frog.platform = platform;
+        }
+
+        if (checkCarCollision()) return;
+        updateTimer(dt);
+        if (game.state === "playing" && frog.row === 0) {
+          // Seguridad adicional; el aterrizaje ya gestiona el hogar.
+        }
+        updateHud();
+      } else if (game.state === "dying") {
+        game.stateTimer -= dt;
+        if (game.stateTimer <= 0) {
+          if (game.lives > 0) {
+            startAttempt(true);
+          } else {
+            game.state = "gameover";
+            saveBest();
+            updateHud();
+            hideToast();
+            showOverlay("gameover");
+            announce(`Fin del juego. Puntuación final: ${game.score} puntos.`);
+          }
+        }
+      } else if (game.state === "home") {
+        game.stateTimer -= dt;
+        if (game.stateTimer <= 0) {
+          if (game.homes.every(Boolean)) {
+            game.state = "levelclear";
+            hideToast();
+            showOverlay("levelclear");
+            saveBest();
+            updateHud();
+            announce(`Nivel ${game.level} completado. Bonus de 1000 puntos.`);
+          } else {
+            startAttempt(true);
+          }
+        }
+      }
+
+      updateParticles(dt);
+    }
+
+    /* ============================================================
+       RENDERIZADO DEL TABLERO
+       ============================================================ */
+    function drawBoardBase() {
+      const bg = ctx.createLinearGradient(0, 0, 0, H);
+      bg.addColorStop(0, "#071f18");
+      bg.addColorStop(0.44, "#06251e");
+      bg.addColorStop(1, "#071a14");
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    function drawHomes(time) {
+      // Seto y suelo del banco superior
+      const hedge = ctx.createLinearGradient(0, 0, 0, RIVER_TOP);
+      hedge.addColorStop(0, "#173f2c");
+      hedge.addColorStop(0.55, "#0f3124");
+      hedge.addColorStop(1, "#082319");
+      ctx.fillStyle = hedge;
+      ctx.fillRect(0, 0, W, RIVER_TOP);
+
+      // Troncos y hojas del seto
+      for (const leaf of deco.hedgeLeaves) {
+        ctx.save();
+        ctx.translate(leaf.x, leaf.y);
+        ctx.rotate(leaf.tilt);
+        ctx.fillStyle = leaf.light ? "rgba(72, 133, 80, .56)" : "rgba(25, 80, 50, .72)";
+        ell(0, 0, leaf.r, leaf.r * 0.48);
+        ctx.fill();
+        ctx.restore();
+      }
+      for (const dot of deco.hedgeDots) {
+        ctx.fillStyle = dot.r > 1.45 ? "rgba(206, 237, 151, .8)" : "rgba(113, 193, 108, .8)";
+        ell(dot.x, dot.y, dot.r, dot.r * 0.75);
+        ctx.fill();
+      }
+
+      // Césped fresco bajo los setos
+      ctx.fillStyle = "rgba(79, 131, 55, .2)";
+      ctx.fillRect(0, 76, W, 12);
+      ctx.fillStyle = "rgba(2, 20, 13, .38)";
+      ctx.fillRect(0, 84, W, 4);
+
+      // Hogares
+      for (let i = 0; i < HOME_CENTERS.length; i += 1) {
+        drawHomeBay(i, time);
+      }
+
+      // Luces de cadena en la parte superior
+      for (const light of deco.homeLights) {
+        const glow = 0.55 + Math.sin(time * 1.6 + light.phase) * 0.2;
+        ctx.save();
+        ctx.globalAlpha = glow;
+        ctx.fillStyle = "#ffd685";
+        ell(light.x, light.y, 2.1, 2.1);
+        ctx.fill();
+        ctx.globalAlpha = glow * 0.18;
+        ell(light.x, light.y, 8, 8);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // Borde inferior del banco
+      ctx.fillStyle = "#041a12";
+      ctx.fillRect(0, RIVER_TOP - 4, W, 4);
+      ctx.fillStyle = "rgba(159, 255, 144, .12)";
+      ctx.fillRect(0, RIVER_TOP - 5, W, 1);
+    }
+
+    function drawHomeBay(index, time) {
+      const center = HOME_CENTERS[index];
+      const x = center - HOME_PAD_W / 2;
+      const y = 11;
+      const occupied = game.homes[index];
+
+      // Sombra / hueco
+      ctx.save();
+      ctx.shadowColor = occupied ? "rgba(166, 255, 101, .34)" : "rgba(255, 218, 115, .19)";
+      ctx.shadowBlur = occupied ? 20 : 12;
+      fillRound(x, y, HOME_PAD_W, HOME_PAD_H, 19, occupied ? "#173b21" : "#0b1f19");
+      ctx.restore();
+
+      // Agua interior
+      const water = ctx.createLinearGradient(0, y, 0, y + HOME_PAD_H);
+      water.addColorStop(0, occupied ? "#173f28" : "#0b2d29");
+      water.addColorStop(0.54, occupied ? "#0f3320" : "#08211d");
+      water.addColorStop(1, occupied ? "#0b2b1b" : "#051713");
+      fillRound(x + 3, y + 3, HOME_PAD_W - 6, HOME_PAD_H - 6, 16, water);
+
+      // Arco de meta
+      strokeRound(x + 3, y + 3, HOME_PAD_W - 6, HOME_PAD_H - 6, 16, occupied ? "rgba(195, 255, 134, .64)" : "rgba(255, 210, 118, .72)", 2);
+      strokeRound(x + 7, y + 7, HOME_PAD_W - 14, HOME_PAD_H - 14, 13, "rgba(255, 255, 255, .07)", 1);
+
+      // Ondas internas
+      ctx.save();
+      roundPath(x + 4, y + 4, HOME_PAD_W - 8, HOME_PAD_H - 8, 15);
+      ctx.clip();
+      ctx.strokeStyle = occupied ? "rgba(138, 255, 124, .16)" : "rgba(99, 227, 207, .16)";
+      ctx.lineWidth = 1.2;
+      for (let ripple = 0; ripple < 3; ripple += 1) {
+        const yy = y + 23 + ripple * 13 + Math.sin(time * 1.3 + ripple + index) * 2;
+        ctx.beginPath();
+        ctx.ellipse(center, yy, 25 + ripple * 5, 3.5, 0, 0, Math.PI);
+        ctx.stroke();
+      }
+
+      if (!occupied) {
+        // Nenúfar dorado vacío
+        ctx.fillStyle = "rgba(64, 120, 66, .7)";
+        ell(center + 4, y + 47, 22, 7);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(243, 205, 113, .32)";
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+        ctx.fillStyle = "rgba(223, 255, 155, .04)";
+        ell(center, y + 33, 15, 5);
+        ctx.fill();
+        // Destello
+        ctx.fillStyle = "rgba(255, 227, 150, .78)";
+        ctx.beginPath();
+        ctx.arc(center + 21, y + 17, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        // Rana descansando en el hogar
+        ctx.fillStyle = "rgba(90, 170, 79, .32)";
+        ell(center, y + 53, 25, 7);
+        ctx.fill();
+        drawFrogAt(center, y + 40, 0.7, "up", false, 0, true);
+        // Pequeña chispa de meta
+        ctx.fillStyle = "rgba(255, 230, 141, .9)";
+        const twinkle = 0.5 + Math.sin(time * 3.5 + index) * 0.5;
+        ctx.globalAlpha = twinkle;
+        ell(center + 26, y + 20, 2, 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+      ctx.restore();
+
+      // Rótulo minúsculo
+      ctx.save();
+      ctx.font = '700 8px "Segoe UI", sans-serif';
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = occupied ? "rgba(216, 255, 179, .56)" : "rgba(255, 216, 137, .66)";
+      ctx.fillText(occupied ? "A SALVO" : "HOGAR", center, 80);
+      ctx.restore();
+    }
+
+    function drawRiver(time) {
+      const water = ctx.createLinearGradient(0, RIVER_TOP, 0, RIVER_BOTTOM);
+      water.addColorStop(0, "#0a3c43");
+      water.addColorStop(0.32, "#073740");
+      water.addColorStop(0.67, "#062f3b");
+      water.addColorStop(1, "#062832");
+      ctx.fillStyle = water;
+      ctx.fillRect(0, RIVER_TOP, W, RIVER_BOTTOM - RIVER_TOP);
+
+      // Franjas de carril acuático
+      for (let lane = 0; lane < 5; lane += 1) {
+        const top = 88 + lane * 58.4;
+        ctx.fillStyle = lane % 2 === 0 ? "rgba(76, 179, 171, .035)" : "rgba(3, 20, 24, .08)";
+        ctx.fillRect(0, top, W, 58.4);
+        ctx.fillStyle = "rgba(132, 255, 234, .055)";
+        ctx.fillRect(0, top, W, 1);
+      }
+
+      // Destellos de agua precalculados
+      for (const glint of deco.riverGlints) {
+        const alpha = 0.04 + (Math.sin(time * 1.5 + glint.phase) + 1) * 0.028;
+        ctx.fillStyle = `rgba(173, 255, 240, ${alpha.toFixed(3)})`;
+        ell(glint.x + Math.sin(time * 0.7 + glint.phase) * 4, glint.y, glint.w, 1.1);
+        ctx.fill();
+      }
+
+      // Ondas animadas suaves
+      ctx.save();
+      ctx.lineWidth = 1;
+      for (let row = 0; row < 5; row += 1) {
+        const baseY = 117 + row * 58.4;
+        for (let line = 0; line < 3; line += 1) {
+          const y = baseY + line * 13 - 11;
+          const phase = time * (0.55 + row * 0.06) + row * 0.8 + line * 1.9;
+          ctx.strokeStyle = line === 0 ? "rgba(157, 246, 228, .095)" : "rgba(157, 246, 228, .045)";
+          ctx.beginPath();
+          for (let x = -20; x <= W + 20; x += 20) {
+            const yy = y + Math.sin(x * 0.019 + phase) * 2.1 + Math.sin(x * 0.007 - phase * 0.7) * 1.4;
+            if (x === -20) ctx.moveTo(x, yy);
+            else ctx.lineTo(x, yy);
+          }
+          ctx.stroke();
+        }
+      }
+      ctx.restore();
+
+      // Juncos y bordes de piedra laterales
+      drawRiverBanks(time);
+
+      // Pequeña espuma cerca de los extremos
+      ctx.save();
+      ctx.globalAlpha = 0.32;
+      for (let i = 0; i < 16; i += 1) {
+        const x = 45 + i * 47 + Math.sin(time * 0.8 + i) * 10;
+        const y = RIVER_BOTTOM - 7 + Math.sin(time * 1.2 + i * 1.7) * 2;
+        ctx.fillStyle = "rgba(184, 255, 240, .34)";
+        ell(x, y, 6 + (i % 3) * 3, 1.2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function drawRiverBanks(time) {
+      const bank = ctx.createLinearGradient(0, 0, 36, 0);
+      bank.addColorStop(0, "#081d16");
+      bank.addColorStop(0.68, "#0e2b1f");
+      bank.addColorStop(1, "rgba(14, 43, 31, 0)");
+      ctx.fillStyle = bank;
+      ctx.fillRect(0, RIVER_TOP, 37, RIVER_BOTTOM - RIVER_TOP);
+      const bankRight = ctx.createLinearGradient(W, 0, W - 36, 0);
+      bankRight.addColorStop(0, "#081d16");
+      bankRight.addColorStop(0.68, "#0e2b1f");
+      bankRight.addColorStop(1, "rgba(14, 43, 31, 0)");
+      ctx.fillStyle = bankRight;
+      ctx.fillRect(W - 37, RIVER_TOP, 37, RIVER_BOTTOM - RIVER_TOP);
+
+      for (let i = 0; i < 8; i += 1) {
+        const y = RIVER_TOP + 14 + i * 35;
+        const sway = Math.sin(time * 1.25 + i) * 2.4;
+        ctx.strokeStyle = "rgba(96, 161, 92, .38)";
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(14, y + 8);
+        ctx.quadraticCurveTo(13 + sway, y - 1, 18 + sway, y - 10);
+        ctx.stroke();
+        ctx.strokeStyle = "rgba(96, 161, 92, .25)";
+        ctx.beginPath();
+        ctx.moveTo(23, y + 7);
+        ctx.quadraticCurveTo(19 - sway, y - 2, 26 - sway, y - 7);
+        ctx.stroke();
+
+        const ry = y + 16;
+        const sway2 = Math.sin(time * 1.2 + i + 2.2) * 2;
+        ctx.beginPath();
+        ctx.moveTo(W - 15, ry);
+        ctx.quadraticCurveTo(W - 12 - sway2, ry - 4, W - 18 - sway2, ry - 11);
+        ctx.stroke();
+      }
+    }
+
+    function drawPlatforms(time) {
+      for (const lane of riverLanes) {
+        // Pequeñas estelas detrás del grupo
+        for (const platform of lane.platforms) {
+          const dir = platform.dir;
+          ctx.save();
+          ctx.globalAlpha = 0.2;
+          ctx.strokeStyle = "rgba(171, 255, 238, .42)";
+          ctx.lineWidth = 1.1;
+          for (let i = 0; i < 3; i += 1) {
+            const trailX = dir > 0 ? platform.x - 12 - i * 10 : platform.x + platform.w + 12 + i * 10;
+            const trailY = platform.y + 15 + i * 4;
+            ctx.beginPath();
+            ctx.ellipse(trailX, trailY, 7 + i * 3, 1.1, 0, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+          ctx.restore();
+
+          if (platform.type === "log") drawLog(platform, time);
+          else drawTurtleRaft(platform, time);
+        }
+      }
+    }
+
+    function drawLog(platform, time) {
+      const bob = Math.sin(time * 1.45 + platform.phase) * 1.3;
+      const x = platform.x;
+      const y = platform.y + bob;
+      const w = platform.w;
+      const h = 38;
+
+      ctx.save();
+      // Sombra / reflejo
+      ctx.fillStyle = "rgba(0, 9, 8, .28)";
+      ell(x + w / 2, y + h / 2 + 11, w * 0.46, 6);
+      ctx.fill();
+
+      // Cuerpo
+      const wood = ctx.createLinearGradient(0, y - h / 2, 0, y + h / 2);
+      wood.addColorStop(0, "#a26c39");
+      wood.addColorStop(0.3, "#825127");
+      wood.addColorStop(0.7, "#663d1c");
+      wood.addColorStop(1, "#4c2d16");
+      fillRound(x, y - h / 2, w, h, 18, wood);
+      strokeRound(x + 0.7, y - h / 2 + 0.7, w - 1.4, h - 1.4, 17, "rgba(47, 26, 10, .82)", 2);
+
+      // Vetas de corteza
+      ctx.save();
+      roundPath(x + 2, y - h / 2 + 2, w - 4, h - 4, 16);
+      ctx.clip();
+      ctx.strokeStyle = "rgba(238, 186, 114, .18)";
+      ctx.lineWidth = 1.2;
+      for (let i = 0; i < 4; i += 1) {
+        const lineY = y - 13 + i * 8;
+        ctx.beginPath();
+        ctx.moveTo(x + 12, lineY);
+        ctx.bezierCurveTo(x + w * 0.3, lineY - 3, x + w * 0.7, lineY + 2, x + w - 10, lineY - 1);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // Troncos cortados en los extremos
+      for (const side of [0, 1]) {
+        const ex = side === 0 ? x + 8 : x + w - 8;
+        const ring = ctx.createRadialGradient(ex, y - 2, 1, ex, y, 11);
+        ring.addColorStop(0, "#c68c50");
+        ring.addColorStop(0.58, "#a36a35");
+        ring.addColorStop(1, "#68401d");
+        ctx.fillStyle = ring;
+        ell(ex, y, 8, h / 2 - 4);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(54, 28, 12, .5)";
+        ctx.lineWidth = 1;
+        for (let ringIndex = 1; ringIndex <= 2; ringIndex += 1) {
+          ell(ex, y, ringIndex * 2.2, ringIndex * (h / 2 - 7) / 2);
+          ctx.stroke();
+        }
+      }
+
+      // Musgo y brillo superior
+      ctx.fillStyle = "rgba(114, 160, 64, .46)";
+      ell(x + w * 0.23, y - 12, w * 0.1, 2.5);
+      ctx.fill();
+      ell(x + w * 0.73, y + 12, w * 0.13, 2.1);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(255, 226, 157, .2)";
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(x + 20, y - h / 2 + 4);
+      ctx.quadraticCurveTo(x + w * 0.45, y - h / 2 + 1, x + w - 21, y - h / 2 + 5);
+      ctx.stroke();
+
+      // Hojitas en un extremo
+      ctx.fillStyle = "#6f9e48";
+      ell(x + w - 16, y - 20, 7, 2.4);
+      ctx.fill();
+      ctx.fillStyle = "#8bbd59";
+      ell(x + w - 9, y - 17, 5.5, 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawTurtle(x, y, dir, phase, scale = 1) {
+      const bob = Math.sin(phase) * 1.1;
+      ctx.save();
+      ctx.translate(x, y + bob);
+      ctx.scale(dir * scale, scale);
+
+      // Aletas
+      ctx.fillStyle = "#3e9563";
+      const flipperW = 7.5;
+      const flipperH = 3.3;
+      for (const side of [-1, 1]) {
+        ctx.save();
+        ctx.translate(-7, side * 13);
+        ctx.rotate(side * 0.5 + Math.sin(phase * 1.5 + side) * 0.12);
+        ell(-1, 0, flipperW, flipperH);
+        ctx.fill();
+        ctx.restore();
+        ctx.save();
+        ctx.translate(10, side * 12);
+        ctx.rotate(side * 0.42 + Math.sin(phase * 1.5 + side + 1) * 0.12);
+        ell(0, 0, flipperW, flipperH);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // Cabeza
+      const headX = 19;
+      const head = ctx.createRadialGradient(headX - 2, -3, 1, headX, 0, 10);
+      head.addColorStop(0, "#8edb8b");
+      head.addColorStop(0.7, "#4b9e64");
+      head.addColorStop(1, "#2e7049");
+      ctx.fillStyle = head;
+      ell(headX, 0, 9.5, 7.2);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(19, 65, 39, .65)";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = "#10251a";
+      ell(headX + 4.8, -2.4, 1.3, 1.5);
+      ctx.fill();
+      ctx.fillStyle = "rgba(232, 255, 210, .9)";
+      ell(headX + 5, -2.9, 0.55, 0.65);
+      ctx.fill();
+      // Sonrisa
+      ctx.strokeStyle = "rgba(22, 67, 40, .65)";
+      ctx.lineWidth = 0.9;
+      ctx.beginPath();
+      ctx.arc(headX + 3.7, 1.6, 2.6, 0.12, 1.4);
+      ctx.stroke();
+
+      // Caparazón
+      const shell = ctx.createRadialGradient(-3, -7, 2, 0, 0, 24);
+      shell.addColorStop(0, "#5fbb73");
+      shell.addColorStop(0.57, "#337d50");
+      shell.addColorStop(1, "#1c5538");
+      ctx.fillStyle = shell;
+      ell(-1, 0, 22, 16);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(228, 255, 195, .5)";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.strokeStyle = "rgba(14, 58, 35, .55)";
+      ctx.lineWidth = 1.2;
+      ell(-1, 0, 16.3, 11.4);
+      ctx.stroke();
+
+      // Patrón del caparazón
+      ctx.strokeStyle = "rgba(15, 64, 37, .58)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(-14, 0); ctx.lineTo(-4, -8); ctx.lineTo(7, -6); ctx.lineTo(12, 1); ctx.lineTo(4, 8); ctx.lineTo(-8, 7); ctx.closePath();
+      ctx.stroke();
+      for (let i = 0; i < 5; i += 1) {
+        const a = -Math.PI / 2 + i * (Math.PI * 2 / 5);
+        const sx = -2 + Math.cos(a) * 9.5;
+        const sy = Math.sin(a) * 7;
+        ell(sx, sy, 2.2, 1.4);
+        ctx.fillStyle = "rgba(171, 224, 143, .2)";
+        ctx.fill();
+      }
+
+      // Brillo
+      ctx.fillStyle = "rgba(226, 255, 200, .16)";
+      ell(-7, -6, 7, 3);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawTurtleRaft(platform, time) {
+      const count = 3;
+      const step = platform.w / count;
+      const dir = platform.dir;
+      ctx.save();
+      // Sombra conjunta sobre el agua
+      ctx.fillStyle = "rgba(0, 8, 8, .2)";
+      ell(platform.x + platform.w / 2, platform.y + 15, platform.w * 0.44, 7);
+      ctx.fill();
+
+      for (let i = 0; i < count; i += 1) {
+        const cx = platform.x + step * (i + 0.5);
+        drawTurtle(cx, platform.y + Math.sin(time * 1.8 + platform.phase + i * 1.3) * 1.1, dir, platform.phase + i * 0.9 + time * 1.15);
+      }
+
+      // Burbujas
+      ctx.globalAlpha = 0.38;
+      for (let i = 0; i < 4; i += 1) {
+        const bx = platform.x + 22 + i * (platform.w / 5);
+        const by = platform.y + 19 + Math.sin(time * 1.6 + i) * 2;
+        ctx.strokeStyle = "rgba(169, 255, 237, .4)";
+        ctx.lineWidth = 0.9;
+        ell(bx, by, 2.4 + i * 0.4, 1);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    }
+
+    function drawMedian(time) {
+      const grass = ctx.createLinearGradient(0, MEDIAN_TOP, 0, MEDIAN_BOTTOM);
+      grass.addColorStop(0, "#2e5624");
+      grass.addColorStop(0.24, "#39652a");
+      grass.addColorStop(0.7, "#2b501f");
+      grass.addColorStop(1, "#213f19");
+      ctx.fillStyle = grass;
+      ctx.fillRect(0, MEDIAN_TOP, W, MEDIAN_BOTTOM - MEDIAN_TOP);
+
+      // Bordillos de piedra
+      for (const y of [MEDIAN_TOP, MEDIAN_BOTTOM - 9]) {
+        ctx.fillStyle = "#7e7058";
+        ctx.fillRect(0, y, W, 9);
+        ctx.fillStyle = "rgba(255, 232, 183, .14)";
+        ctx.fillRect(0, y, W, 1.5);
+        ctx.strokeStyle = "rgba(37, 30, 20, .35)";
+        ctx.lineWidth = 1;
+        for (let x = 12; x < W; x += 37) {
+          ctx.beginPath();
+          ctx.moveTo(x, y + 1);
+          ctx.lineTo(x - 3, y + 8);
+          ctx.stroke();
+        }
+      }
+
+      // Hierba
+      for (const plant of deco.medianPlants) {
+        ctx.strokeStyle = plant.a > 0.45 ? "rgba(141, 190, 87, .45)" : "rgba(83, 141, 67, .4)";
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(plant.x, MEDIAN_TOP + 19);
+        ctx.quadraticCurveTo(plant.x + Math.sin(time + plant.a * 7) * 2, MEDIAN_TOP + 19 - plant.h * 0.65, plant.x + 2.2, MEDIAN_TOP + 19 - plant.h);
+        ctx.stroke();
+      }
+
+      // Flores
+      const flowers = [
+        [112, 400, "#f5df8b"], [315, 423, "#f7a7bd"], [512, 396, "#fff5d2"],
+        [690, 418, "#e7a4d0"], [46, 414, "#f4d57a"], [758, 394, "#f5b0c7"],
+      ];
+      for (const [x, y, color] of flowers) {
+        ctx.strokeStyle = "rgba(90, 141, 59, .65)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.quadraticCurveTo(x + 3, y + 8, x + 1, y + 15);
+        ctx.stroke();
+        ctx.fillStyle = color;
+        for (let p = 0; p < 5; p += 1) {
+          const a = (p / 5) * Math.PI * 2;
+          ell(x + Math.cos(a) * 2.7, y - 1 + Math.sin(a) * 2.7, 1.6, 1.5);
+          ctx.fill();
+        }
+        ctx.fillStyle = "#f5b842";
+        ell(x, y - 1, 1.24, 1.24);
+        ctx.fill();
+      }
+
+      // Pequeña señal de zona segura
+      drawSafetySigns();
+    }
+
+    function drawSafetySigns() {
+      ctx.save();
+      for (const x of [59, 741]) {
+        ctx.fillStyle = "rgba(31, 24, 14, .5)";
+        ctx.fillRect(x - 2, MEDIAN_TOP + 17, 4, 17);
+        fillRound(x - 16, MEDIAN_TOP + 10, 32, 11, 3, "rgba(217, 190, 121, .78)");
+        ctx.strokeStyle = "rgba(62, 43, 19, .55)";
+        ctx.lineWidth = 1;
+        roundPath(x - 16, MEDIAN_TOP + 10, 32, 11, 3);
+        ctx.stroke();
+        ctx.fillStyle = "rgba(64, 62, 31, .75)";
+        ctx.font = '700 5.4px "Segoe UI", sans-serif';
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("SEGURO", x, MEDIAN_TOP + 16);
+      }
+      ctx.restore();
+    }
+
+    function drawRoad(time) {
+      const asphalt = ctx.createLinearGradient(0, ROAD_TOP, 0, ROAD_BOTTOM);
+      asphalt.addColorStop(0, "#292d31");
+      asphalt.addColorStop(0.46, "#24282c");
+      asphalt.addColorStop(1, "#1c2024");
+      ctx.fillStyle = asphalt;
+      ctx.fillRect(0, ROAD_TOP, W, ROAD_BOTTOM - ROAD_TOP);
+
+      // Textura de asfalto
+      for (const speck of deco.roadSpecks) {
+        ctx.fillStyle = `rgba(241, 236, 205, ${speck.a})`;
+        ell(speck.x, speck.y, speck.r, speck.r * 0.6);
+        ctx.fill();
+      }
+
+      // Bordes de la calzada
+      ctx.fillStyle = "#d8bc60";
+      ctx.fillRect(0, ROAD_TOP + 3, W, 4);
+      ctx.fillRect(0, ROAD_BOTTOM - 7, W, 4);
+      ctx.fillStyle = "rgba(255, 250, 207, .38)";
+      ctx.fillRect(0, ROAD_TOP + 3, W, 1);
+      ctx.fillRect(0, ROAD_BOTTOM - 7, W, 1);
+
+      // Líneas discontinuas entre carriles
+      for (let lane = 1; lane < 5; lane += 1) {
+        const y = ROAD_TOP + lane * 58;
+        ctx.strokeStyle = "rgba(234, 236, 220, .61)";
+        ctx.lineWidth = 2.1;
+        ctx.setLineDash([30, 24]);
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(W, y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.strokeStyle = "rgba(0, 0, 0, .2)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, y + 2);
+        ctx.lineTo(W, y + 2);
+        ctx.stroke();
+      }
+
+      // Flechas de dirección tenues
+      for (const arrow of deco.roadArrows) {
+        ctx.save();
+        ctx.translate(arrow.x, arrow.y);
+        ctx.scale(arrow.dir, 1);
+        ctx.globalAlpha = 0.09;
+        ctx.fillStyle = "#f8e9b5";
+        ctx.beginPath();
+        ctx.moveTo(24, 0); ctx.lineTo(8, -7); ctx.lineTo(12, 0); ctx.lineTo(8, 7); ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // Brillo longitudinal
+      const sheen = ctx.createLinearGradient(0, ROAD_TOP, 0, ROAD_BOTTOM);
+      sheen.addColorStop(0, "rgba(255, 255, 255, .035)");
+      sheen.addColorStop(0.45, "rgba(255, 255, 255, 0)");
+      sheen.addColorStop(1, "rgba(0, 0, 0, .1)");
+      ctx.fillStyle = sheen;
+      ctx.fillRect(0, ROAD_TOP, W, ROAD_BOTTOM - ROAD_TOP);
+
+      // Pequeño resplandor que se mueve con el tiempo junto a los bordes.
+      ctx.save();
+      ctx.globalAlpha = 0.06;
+      const lightX = ((time * 27) % (W + 160)) - 80;
+      const light = ctx.createLinearGradient(lightX - 70, 0, lightX + 70, 0);
+      light.addColorStop(0, "rgba(255, 210, 113, 0)");
+      light.addColorStop(0.5, "rgba(255, 210, 113, .55)");
+      light.addColorStop(1, "rgba(255, 210, 113, 0)");
+      ctx.fillStyle = light;
+      ctx.fillRect(0, ROAD_TOP, W, ROAD_BOTTOM - ROAD_TOP);
+      ctx.restore();
+    }
+
+    function drawStartZone(time) {
+      const grass = ctx.createLinearGradient(0, START_TOP, 0, H);
+      grass.addColorStop(0, "#345c27");
+      grass.addColorStop(0.55, "#3c662a");
+      grass.addColorStop(1, "#24491d");
+      ctx.fillStyle = grass;
+      ctx.fillRect(0, START_TOP, W, H - START_TOP);
+
+      // Borde de seguridad
+      ctx.fillStyle = "rgba(233, 214, 153, .44)";
+      ctx.fillRect(0, START_TOP, W, 2);
+      ctx.fillStyle = "rgba(17, 44, 17, .36)";
+      ctx.fillRect(0, START_TOP + 2, W, 3);
+
+      // Tierra y plantas
+      for (const plant of deco.startPlants) {
+        ctx.strokeStyle = plant.flower ? "rgba(111, 157, 72, .48)" : "rgba(84, 140, 69, .4)";
+        ctx.lineWidth = 1.1;
+        ctx.beginPath();
+        ctx.moveTo(plant.x, H - 13);
+        ctx.quadraticCurveTo(plant.x + Math.sin(time + plant.h) * 2, H - 22, plant.x + 1.4, H - 18 - plant.h);
+        ctx.stroke();
+        if (plant.flower) {
+          ctx.fillStyle = plant.h > 7 ? "#f2d884" : "#f1a9c0";
+          ell(plant.x + 1.5, H - 19 - plant.h, 2.1, 1.7);
+          ctx.fill();
+        }
+      }
+
+      // Plataforma de inicio de piedra
+      ctx.save();
+      ctx.shadowColor = "rgba(4, 16, 8, .4)";
+      ctx.shadowBlur = 8;
+      fillRound(305, 742, 190, 46, 18, "rgba(91, 83, 58, .75)");
+      ctx.restore();
+      strokeRound(305, 742, 190, 46, 18, "rgba(229, 207, 145, .22)", 1.4);
+      ctx.strokeStyle = "rgba(39, 31, 18, .28)";
+      ctx.lineWidth = 1;
+      for (let x = 328; x < 486; x += 26) {
+        ctx.beginPath();
+        ctx.moveTo(x, 746);
+        ctx.lineTo(x - 5, 784);
+        ctx.stroke();
+      }
+
+      // Marca de inicio
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = '800 8px "Segoe UI", sans-serif';
+      ctx.fillStyle = "rgba(240, 235, 195, .56)";
+      ctx.fillText("INICIO", 400, 798);
+      ctx.restore();
+
+      // Flores de orilla
+      for (const [x, y, color] of [[252, 794, "#f3df9b"], [548, 789, "#f1a4bd"], [215, 776, "#fce8ac"], [588, 801, "#e9a6ce"]]) {
+        ctx.strokeStyle = "rgba(58, 100, 45, .75)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.quadraticCurveTo(x - 2, y - 6, x, y - 10);
+        ctx.stroke();
+        ctx.fillStyle = color;
+        for (let p = 0; p < 5; p += 1) {
+          const a = p / 5 * Math.PI * 2;
+          ell(x + Math.cos(a) * 2.4, y - 11 + Math.sin(a) * 2.4, 1.4, 1.3);
+          ctx.fill();
+        }
+        ctx.fillStyle = "#e5b83e";
+        ell(x, y - 11, 1.1, 1.1);
+        ctx.fill();
+      }
+
+      // Límites laterales de la orilla
+      ctx.fillStyle = "rgba(9, 30, 18, .55)";
+      ctx.fillRect(0, START_TOP, 22, H - START_TOP);
+      ctx.fillRect(W - 22, START_TOP, 22, H - START_TOP);
+      ctx.fillStyle = "rgba(155, 217, 119, .15)";
+      ctx.fillRect(22, START_TOP, 1, H - START_TOP);
+      ctx.fillRect(W - 23, START_TOP, 1, H - START_TOP);
+    }
+
+    function drawVehicle(vehicle, time) {
+      if (vehicle.type === "car") drawCar(vehicle);
+      else if (vehicle.type === "truck") drawTruck(vehicle);
+      else drawExcavator(vehicle, time);
+    }
+
+    function vehicleWheels(w, h, positions) {
+      ctx.fillStyle = "#0a0c0d";
+      for (const px of positions) {
+        fillRound(px, h / 2 - 2, 15, 5, 2.5, "#090b0b");
+        ctx.fillStyle = "rgba(119, 129, 125, .34)";
+        fillRound(px + 4, h / 2 + 0.5, 6, 1.5, 1, "rgba(146, 160, 149, .35)");
+        ctx.fillStyle = "#0a0c0d";
+      }
+    }
+
+    function drawCar(vehicle) {
+      const x = vehicle.x;
+      const y = vehicle.y;
+      const w = vehicle.w;
+      const h = vehicle.h;
+      const dir = vehicle.dir;
+      const cx = x + w / 2;
+      ctx.save();
+      ctx.translate(cx, y);
+      ctx.scale(dir, 1);
+
+      // Sombra
+      ctx.fillStyle = "rgba(0, 0, 0, .36)";
+      ell(0, h / 2 + 3.5, w * 0.43, 4.5);
+      ctx.fill();
+
+      // Llantas
+      ctx.fillStyle = "#0b0d0e";
+      fillRound(-w * 0.33, -h / 2 + 2, 16, 7, 3, "#090b0b");
+      fillRound(w * 0.19, -h / 2 + 2, 16, 7, 3, "#090b0b");
+      fillRound(-w * 0.33, h / 2 - 9, 16, 7, 3, "#090b0b");
+      fillRound(w * 0.19, h / 2 - 9, 16, 7, 3, "#090b0b");
+
+      // Carrocería
+      const body = ctx.createLinearGradient(0, -h / 2, 0, h / 2);
+      body.addColorStop(0, lighten(vehicle.color, 0.22));
+      body.addColorStop(0.35, vehicle.color);
+      body.addColorStop(1, darken(vehicle.color, 0.42));
+      fillRound(-w / 2 + 3, -h / 2 + 3, w - 6, h - 6, 8, body);
+      strokeRound(-w / 2 + 3, -h / 2 + 3, w - 6, h - 6, 8, "rgba(16, 24, 22, .62)", 1.4);
+
+      // Techo / cabina
+      const cabin = ctx.createLinearGradient(0, -h / 2, 0, h / 2);
+      cabin.addColorStop(0, "rgba(208, 237, 226, .72)");
+      cabin.addColorStop(0.45, "rgba(89, 125, 119, .58)");
+      cabin.addColorStop(1, "rgba(28, 46, 43, .84)");
+      fillRound(-w * 0.02, -h / 2 + 7, w * 0.4, h - 14, 5, cabin);
+      ctx.fillStyle = "rgba(229, 255, 244, .26)";
+      fillRound(-w * 0.005, -h / 2 + 9, w * 0.09, h - 18, 2, "rgba(229, 255, 244, .26)");
+
+      // Franja / luces
+      ctx.fillStyle = "rgba(255, 255, 255, .16)";
+      fillRound(-w * 0.38, -1.5, w * 0.15, 3, 1.5, "rgba(255, 255, 255, .16)");
+
+      // Faros delanteros
+      ctx.fillStyle = "#fff1b9";
+      fillRound(w / 2 - 7, -h / 2 + 7, 4, 5, 1.5, "#fff1b9");
+      fillRound(w / 2 - 7, h / 2 - 12, 4, 5, 1.5, "#fff1b9");
+      ctx.fillStyle = "rgba(255, 242, 180, .22)";
+      ell(w / 2 + 3, -h / 2 + 9, 7, 4);
+      ctx.fill();
+
+      // Pilotos traseros
+      ctx.fillStyle = "#e94f48";
+      fillRound(-w / 2 + 2, -h / 2 + 7, 3, 4, 1, "#e94f48");
+      fillRound(-w / 2 + 2, h / 2 - 11, 3, 4, 1, "#e94f48");
+
+      // Brillo superior
+      ctx.strokeStyle = "rgba(255, 255, 255, .28)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(-w * 0.22, -h / 2 + 5.5);
+      ctx.lineTo(w * 0.18, -h / 2 + 5.5);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawTruck(vehicle) {
+      const x = vehicle.x;
+      const y = vehicle.y;
+      const w = vehicle.w;
+      const h = vehicle.h;
+      const dir = vehicle.dir;
+      const cx = x + w / 2;
+      ctx.save();
+      ctx.translate(cx, y);
+      ctx.scale(dir, 1);
+
+      // Sombra
+      ctx.fillStyle = "rgba(0, 0, 0, .4)";
+      ell(0, h / 2 + 4, w * 0.46, 5);
+      ctx.fill();
+
+      // Ruedas
+      for (const px of [-w * 0.43, -w * 0.2, w * 0.15, w * 0.33]) {
+        fillRound(px - 7, -h / 2 + 2, 17, 8, 3, "#090b0b");
+        fillRound(px - 7, h / 2 - 10, 17, 8, 3, "#090b0b");
+      }
+
+      // Remolque
+      const trailer = ctx.createLinearGradient(0, -h / 2, 0, h / 2);
+      trailer.addColorStop(0, "#b7c9c5");
+      trailer.addColorStop(0.28, "#dce8e2");
+      trailer.addColorStop(0.72, "#96aba5");
+      trailer.addColorStop(1, "#6f8580");
+      fillRound(-w / 2 + 4, -h / 2 + 6, w * 0.67, h - 12, 6, trailer);
+      strokeRound(-w / 2 + 4, -h / 2 + 6, w * 0.67, h - 12, 6, "rgba(47, 66, 59, .7)", 1.5);
+
+      // Corrugado del remolque
+      ctx.strokeStyle = "rgba(70, 99, 89, .3)";
+      ctx.lineWidth = 1;
+      for (let i = 1; i < 8; i += 1) {
+        const xx = -w / 2 + 10 + i * (w * 0.61 / 8);
+        ctx.beginPath();
+        ctx.moveTo(xx, -h / 2 + 9);
+        ctx.lineTo(xx, h / 2 - 9);
+        ctx.stroke();
+      }
+
+      // Franja del remolque
+      ctx.fillStyle = lighten(vehicle.color, 0.03);
+      fillRound(-w / 2 + 12, -4.2, w * 0.52, 8.4, 2, lighten(vehicle.color, 0.03));
+      ctx.fillStyle = "rgba(20, 33, 28, .52)";
+      ctx.fillRect(-w / 2 + 17, -1, w * 0.43, 2);
+
+      // Cabina
+      const cab = ctx.createLinearGradient(0, -h / 2, 0, h / 2);
+      cab.addColorStop(0, lighten(vehicle.color, 0.28));
+      cab.addColorStop(0.42, vehicle.color);
+      cab.addColorStop(1, darken(vehicle.color, 0.4));
+      fillRound(w * 0.18, -h / 2 + 4, w * 0.32, h - 8, 7, cab);
+      strokeRound(w * 0.18, -h / 2 + 4, w * 0.32, h - 8, 7, "rgba(53, 31, 17, .52)", 1.4);
+
+      // Parabrisas
+      const glass = ctx.createLinearGradient(0, -h / 2, 0, h / 2);
+      glass.addColorStop(0, "rgba(216, 245, 235, .76)");
+      glass.addColorStop(1, "rgba(44, 68, 63, .8)");
+      fillRound(w * 0.37, -h / 2 + 9, w * 0.1, h - 18, 3, glass);
+
+      // Detalles de cabina
+      ctx.fillStyle = "#f5d16a";
+      fillRound(w * 0.25, -h / 2 + 8, 4, 3, 1, "#f5d16a");
+      ctx.fillStyle = "#f5f0d6";
+      fillRound(w / 2 - 6, -h / 2 + 10, 4, 5, 1.3, "#f5f0d6");
+      fillRound(w / 2 - 6, h / 2 - 15, 4, 5, 1.3, "#f5f0d6");
+      ctx.fillStyle = "#e84d43";
+      fillRound(-w / 2 + 2, -h / 2 + 10, 3, 4, 1, "#e84d43");
+      fillRound(-w / 2 + 2, h / 2 - 14, 3, 4, 1, "#e84d43");
+
+      // Faro delantero
+      ctx.fillStyle = "rgba(255, 247, 203, .28)";
+      ell(w / 2 + 4, 0, 8, 5);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawExcavator(vehicle, time) {
+      const x = vehicle.x;
+      const y = vehicle.y;
+      const w = vehicle.w;
+      const h = vehicle.h;
+      const dir = vehicle.dir;
+      const cx = x + w / 2;
+      ctx.save();
+      ctx.translate(cx, y);
+      ctx.scale(dir, 1);
+
+      // Sombra
+      ctx.fillStyle = "rgba(0, 0, 0, .42)";
+      ell(0, h / 2 + 4, w * 0.44, 5.2);
+      ctx.fill();
+
+      // Orugas
+      fillRound(-w / 2 + 4, -h / 2 + 4, w - 8, h - 8, 10, "#1d2222");
+      strokeRound(-w / 2 + 4, -h / 2 + 4, w - 8, h - 8, 10, "rgba(7, 10, 10, .8)", 1.5);
+      ctx.fillStyle = "rgba(115, 121, 113, .34)";
+      for (let i = 0; i < 9; i += 1) {
+        const px = -w / 2 + 10 + i * (w - 20) / 8;
+        ctx.fillRect(px, -h / 2 + 7, 3, h - 14);
+      }
+      ctx.fillStyle = "rgba(63, 67, 63, .8)";
+      ell(-w * 0.34, 0, 10, h / 2 - 6);
+      ctx.fill();
+      ell(w * 0.3, 0, 10, h / 2 - 6);
+      ctx.fill();
+
+      // Chasis amarillo
+      const yellow = ctx.createLinearGradient(0, -h / 2, 0, h / 2);
+      yellow.addColorStop(0, "#ffe26a");
+      yellow.addColorStop(0.38, "#f3b82f");
+      yellow.addColorStop(1, "#b8791d");
+      fillRound(-w * 0.3, -h * 0.24, w * 0.61, h * 0.48, 6, yellow);
+      strokeRound(-w * 0.3, -h * 0.24, w * 0.61, h * 0.48, 6, "rgba(94, 61, 12, .58)", 1.2);
+
+      // Cabina
+      fillRound(-w * 0.25, -h * 0.19, w * 0.24, h * 0.38, 4, "#efb42f");
+      ctx.fillStyle = "rgba(46, 69, 65, .85)";
+      fillRound(-w * 0.21, -h * 0.13, w * 0.13, h * 0.25, 2, "rgba(46, 69, 65, .85)");
+      ctx.fillStyle = "rgba(218, 249, 235, .25)";
+      fillRound(-w * 0.2, -h * 0.11, w * 0.035, h * 0.21, 1, "rgba(218, 249, 235, .25)");
+
+      // Brazo y pluma
+      ctx.save();
+      ctx.translate(w * 0.16, -h * 0.08);
+      ctx.rotate(-0.28 + Math.sin(time * 1.6 + vehicle.x * 0.01) * 0.025);
+      const arm = ctx.createLinearGradient(0, 0, w * 0.34, 0);
+      arm.addColorStop(0, "#f6c03f");
+      arm.addColorStop(1, "#dc9b21");
+      ctx.fillStyle = arm;
+      fillRound(-3, -4, w * 0.34, 8, 4, arm);
+      ctx.strokeStyle = "rgba(93, 60, 13, .55)";
+      ctx.lineWidth = 1;
+      roundPath(-3, -4, w * 0.34, 8, 4);
+      ctx.stroke();
+      // Articulación
+      ctx.fillStyle = "#8c5b17";
+      ell(w * 0.12, 0, 3.4, 3.4);
+      ctx.fill();
+      // Balde
+      ctx.translate(w * 0.33, 3);
+      ctx.rotate(0.45);
+      ctx.fillStyle = "#c99426";
+      ctx.beginPath();
+      ctx.moveTo(0, -3);
+      ctx.lineTo(15, 2);
+      ctx.lineTo(12, 11);
+      ctx.lineTo(1, 9);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = "rgba(75, 48, 10, .7)";
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+      ctx.fillStyle = "rgba(255, 238, 170, .3)";
+      ctx.fillRect(2, 0, 8, 2);
+      ctx.restore();
+
+      // Detalles y franja de advertencia
+      ctx.fillStyle = "rgba(43, 37, 20, .58)";
+      ctx.fillRect(-w * 0.28, h * 0.15, w * 0.18, 3);
+      ctx.fillStyle = "#242320";
+      fillRound(w * 0.32, -h * 0.17, w * 0.06, h * 0.34, 3, "#242320");
+      ctx.fillStyle = "rgba(255, 236, 178, .18)";
+      fillRound(-w * 0.4, -h * 0.32, w * 0.13, 2, 1, "rgba(255, 236, 178, .18)");
+      ctx.restore();
+    }
+
+    function lighten(hex, amount) {
+      const color = parseHex(hex);
+      return `rgb(${Math.round(clamp(color.r + 255 * amount, 0, 255))}, ${Math.round(clamp(color.g + 255 * amount, 0, 255))}, ${Math.round(clamp(color.b + 255 * amount, 0, 255))})`;
+    }
+
+    function darken(hex, amount) {
+      const color = parseHex(hex);
+      return `rgb(${Math.round(clamp(color.r * (1 - amount), 0, 255))}, ${Math.round(clamp(color.g * (1 - amount), 0, 255))}, ${Math.round(clamp(color.b * (1 - amount), 0, 255))})`;
+    }
+
+    function parseHex(hex) {
+      if (!hex || hex[0] !== "#") return { r: 255, g: 255, b: 255 };
+      let raw = hex.slice(1);
+      if (raw.length === 3) raw = raw.split("").map((c) => c + c).join("");
+      const num = parseInt(raw, 16);
+      return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
+    }
+
+    function drawSideBorders(time) {
+      // Juncos y piedras en los márgenes del tablero
+      ctx.save();
+      const left = ctx.createLinearGradient(0, 0, 42, 0);
+      left.addColorStop(0, "rgba(4, 18, 13, .88)");
+      left.addColorStop(1, "rgba(4, 18, 13, 0)");
+      ctx.fillStyle = left;
+      ctx.fillRect(0, RIVER_TOP - 6, 42, RIVER_BOTTOM - RIVER_TOP + 12);
+
+      const right = ctx.createLinearGradient(W, 0, W - 42, 0);
+      right.addColorStop(0, "rgba(4, 18, 13, .88)");
+      right.addColorStop(1, "rgba(4, 18, 13, 0)");
+      ctx.fillStyle = right;
+      ctx.fillRect(W - 42, RIVER_TOP - 6, 42, RIVER_BOTTOM - RIVER_TOP + 12);
+
+      // El marco exterior
+      ctx.strokeStyle = "rgba(181, 255, 158, .15)";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(13, 7, W - 26, H - 15);
+      ctx.strokeStyle = "rgba(0, 0, 0, .38)";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(17, 11, W - 34, H - 23);
+
+      // Pequeños indicadores laterales de hogares
+      for (const x of [24, W - 24]) {
+        ctx.fillStyle = "rgba(255, 211, 107, .45)";
+        ell(x, 44, 2.2, 2.2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    /* ============================================================
+       RENDERIZADO DE LA RANA
+       ============================================================ */
+    function drawFrogAt(x, y, scale, facing, hopping, hopT, alpha = false) {
+      const hopLift = hopping ? Math.sin(Math.PI * hopT) : 0;
+      const squash = hopping ? 1 + hopLift * 0.08 : 1;
+      const stretchY = hopping ? 1 + hopLift * 0.12 : 1;
+      const bob = hopping ? 0 : Math.sin(game.sceneTime * 2.4) * 0.7;
+      ctx.save();
+      ctx.translate(x, y + bob - (hopping ? hopLift * 3 : 0));
+      ctx.scale(scale / Math.sqrt(stretchY / squash), scale * Math.sqrt(stretchY / squash));
+      if (facing === "left") ctx.scale(-1, 1);
+
+      // Sombra
+      ctx.globalAlpha = alpha ? 0.34 : 0.42;
+      ctx.fillStyle = "rgba(0, 8, 5, .48)";
+      ell(0, 16.5 + (hopping ? hopLift * 3 : 0), 16, 4.1);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+
+      // Patas traseras
+      const legWiggle = hopping ? Math.sin(Date.now() / 40) * 0.04 : 0;
+      ctx.fillStyle = "#4ab852";
+      ctx.strokeStyle = "#1d5c2e";
+      ctx.lineWidth = 1.8;
+      for (const side of [-1, 1]) {
+        ctx.save();
+        ctx.translate(side * 11, 11);
+        ctx.rotate(side * (0.42 + legWiggle));
+        ctx.beginPath();
+        ctx.ellipse(0, 3, 6.9, 4.3, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // Cuerpo
+      const bodyGradient = ctx.createRadialGradient(-5, -7, 2, 0, 0, 24);
+      bodyGradient.addColorStop(0, "#c7ff83");
+      bodyGradient.addColorStop(0.37, "#8cea65");
+      bodyGradient.addColorStop(0.78, "#58c34d");
+      bodyGradient.addColorStop(1, "#379c45");
+      ctx.fillStyle = bodyGradient;
+      ctx.strokeStyle = "#1c5c2d";
+      ctx.lineWidth = 2.2;
+      ell(0, 2, 17.3, 14.5);
+      ctx.fill();
+      ctx.stroke();
+
+      // Vientre
+      ctx.fillStyle = "rgba(223, 255, 167, .34)";
+      ell(1.5, 6, 9.3, 6.5);
+      ctx.fill();
+
+      // Manchas
+      ctx.fillStyle = "rgba(60, 144, 49, .45)";
+      ell(-9, -2, 2.6, 1.8);
+      ctx.fill();
+      ell(8, 5, 2.2, 1.3);
+      ctx.fill();
+
+      // Ojos
+      for (const side of [-1, 1]) {
+        ctx.save();
+        ctx.translate(side * 8.2, -9.5);
+        ctx.fillStyle = "#68d85d";
+        ctx.strokeStyle = "#1c5c2d";
+        ctx.lineWidth = 1.8;
+        ell(0, 0, 6.8, 7.1);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = "#f7fff1";
+        ell(0.4, -0.6, 4, 4.2);
+        ctx.fill();
+        ctx.fillStyle = "#0b2111";
+        const pupilShift = facing === "left" ? -1.1 : facing === "right" ? 1.1 : 0;
+        ell(0.4 + pupilShift, -0.2, 1.7, 2);
+        ctx.fill();
+        ctx.fillStyle = "rgba(255, 255, 255, .9)";
+        ell(1.3 + pupilShift, -1.2, 0.65, 0.72);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // Boca
+      ctx.strokeStyle = "rgba(31, 94, 48, .8)";
+      ctx.lineWidth = 1.35;
+      ctx.beginPath();
+      ctx.arc(1, 4.8, 5.5, 0.23, Math.PI - 0.23);
+      ctx.stroke();
+
+      // Manos delanteras
+      ctx.fillStyle = "#65cf58";
+      ctx.strokeStyle = "#1c5c2d";
+      ctx.lineWidth = 1.3;
+      for (const side of [-1, 1]) {
+        ctx.save();
+        ctx.translate(side * 12.5, 7.5);
+        ctx.rotate(side * 0.3);
+        ell(0, 2, 3.3, 5.2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      }
+      ctx.restore();
+    }
+
+    function drawFrog(time) {
+      if (game.state === "dying") {
+        const cause = game.deathCause;
+        if (cause === "water" || cause === "carried") {
+          drawSplash(game.deathAt.x, game.deathAt.y, time);
+          return;
+        }
+        if (cause === "hedge") {
+          drawDyingFrog(time, 0.55, 1.1);
+          return;
+        }
+        drawDyingFrog(time, 1, 0.45);
+        return;
+      }
+
+      if (game.state === "gameover" || (game.state === "menu" && overlay.hidden === false && game.overlayMode === "start")) {
+        // Aun en el menú, la ranita espera en la orilla.
+      }
+
+      if (game.state === "home") {
+        // El objetivo ya está pintado en el nenúfar; no se dibuja otra rana.
+        return;
+      }
+
+      drawFrogAt(frog.x, frog.y, 1, frog.facing, frog.hopping, frog.hopT);
+    }
+
+    function drawDyingFrog(time, alphaScale, scale) {
+      const cause = game.deathCause;
+      if (cause === "timeout") {
+        // Rana aturdida con estrellas
+        drawFrogAt(game.deathAt.x, game.deathAt.y, scale, "up", false, 0, true);
+        ctx.save();
+        ctx.globalAlpha = alphaScale;
+        for (let i = 0; i < 3; i += 1) {
+          const a = time * 2.6 + i * (Math.PI * 2 / 3);
+          const sx = game.deathAt.x + Math.cos(a) * 22;
+          const sy = game.deathAt.y - 30 + Math.sin(a) * 7;
+          drawStar(sx, sy, 4.2, 2, i % 2 ? "#ffd36a" : "#fff0b8");
+        }
+        ctx.restore();
+        return;
+      }
+      // Rana aplastada / aturdida
+      ctx.save();
+      ctx.globalAlpha = alphaScale;
+      ctx.translate(game.deathAt.x, game.deathAt.y);
+      ctx.scale(1, 0.6);
+      ctx.fillStyle = "rgba(75, 180, 79, .9)";
+      ctx.strokeStyle = "#1c5c2d";
+      ctx.lineWidth = 2;
+      ell(0, 2, 21, 12);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#f7fff1";
+      ell(-7, -4, 3.2, 3.2);
+      ctx.fill();
+      ell(7, -4, 3.2, 3.2);
+      ctx.fill();
+      ctx.strokeStyle = "#0b2111";
+      ctx.lineWidth = 1.3;
+      for (const sx of [-7, 7]) {
+        ctx.beginPath();
+        ctx.moveTo(sx - 2.2, -6.2);
+        ctx.lineTo(sx + 2.2, -1.8);
+        ctx.moveTo(sx + 2.2, -6.2);
+        ctx.lineTo(sx - 2.2, -1.8);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawStar(x, y, outer, inner, color) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      for (let i = 0; i < 10; i += 1) {
+        const r = i % 2 === 0 ? outer : inner;
+        const a = -Math.PI / 2 + i * Math.PI / 5;
+        const px = x + Math.cos(a) * r;
+        const py = y + Math.sin(a) * r;
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function drawSplash(x, y, time) {
+      const age = 1 - clamp(game.stateTimer / 1.42, 0, 1);
+      ctx.save();
+      ctx.globalAlpha = 1 - age * 0.72;
+      for (let i = 0; i < 3; i += 1) {
+        const r = 12 + age * 38 + i * 8;
+        ctx.strokeStyle = i === 0 ? "rgba(185, 255, 239, .65)" : "rgba(134, 247, 233, .28)";
+        ctx.lineWidth = 2 - i * 0.45;
+        ctx.beginPath();
+        ctx.ellipse(x, y + 10, r, r * 0.31, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      // Gotas
+      for (let i = 0; i < 7; i += 1) {
+        const a = i * 1.7 + 0.6;
+        const dist = 10 + age * 58;
+        ctx.fillStyle = i % 2 ? "rgba(143, 245, 235, .7)" : "rgba(219, 255, 249, .8)";
+        ell(x + Math.cos(a) * dist, y + 5 - Math.abs(Math.sin(a)) * age * 28 + age * age * 20, 2.2, 1.4);
+        ctx.fill();
+      }
+      ctx.restore();
+
+      // Burbujas
+      ctx.save();
+      ctx.globalAlpha = 0.65 - age * 0.4;
+      for (let i = 0; i < 4; i += 1) {
+        const bx = x - 18 + i * 12 + Math.sin(time * 3 + i) * 2;
+        const by = y + 11 - (time * 15 + i * 7) % 25;
+        ctx.strokeStyle = "rgba(182, 255, 240, .45)";
+        ctx.lineWidth = 0.9;
+        ell(bx, by, 2.2 + i * 0.35, 1.3 + i * 0.2);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawParticles() {
+      for (const p of game.particles) {
+        const alpha = clamp(p.life / p.maxLife, 0, 1);
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = p.color;
+        if (p.kind === "water") {
+          ell(p.x, p.y, p.size, p.size * 0.8);
+          ctx.fill();
+        } else if (p.kind === "crash") {
+          ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+        } else {
+          ell(p.x, p.y, p.size, p.size);
+          ctx.fill();
+        }
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function drawVignette() {
+      const vignette = ctx.createRadialGradient(W / 2, H * 0.48, H * 0.24, W / 2, H * 0.48, H * 0.72);
+      vignette.addColorStop(0, "rgba(0, 0, 0, 0)");
+      vignette.addColorStop(0.76, "rgba(0, 7, 5, .05)");
+      vignette.addColorStop(1, "rgba(0, 7, 5, .29)");
+      ctx.fillStyle = vignette;
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    function render(time) {
+      drawBoardBase();
+      drawHomes(time);
+      drawRiver(time);
+      drawPlatforms(time);
+      drawMedian(time);
+      drawRoad(time);
+      for (const lane of roadLanes) {
+        for (const vehicle of lane.vehicles) drawVehicle(vehicle, time);
+      }
+      drawStartZone(time);
+      drawSideBorders(time);
+      drawFrog(time);
+      drawParticles();
+      drawVignette();
+    }
+
+    /* ============================================================
+       INICIALIZACIÓN / EVENTOS
+       ============================================================ */
+    function setupCanvas() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.round(W * dpr);
+      canvas.height = Math.round(H * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.imageSmoothingEnabled = true;
+    }
+
+    function pauseGame() {
+      if (game.state !== "playing") return;
+      game.state = "paused";
+      saveBest();
+      hideToast();
+      showOverlay("pause");
+      updateHud();
+      announce("Juego en pausa.");
+    }
+
+    function resumeGame() {
+      if (game.state !== "paused") return;
+      game.state = "playing";
+      hideOverlay();
+      updateHud();
+      ensureAudio();
+      announce("Continuamos.");
+      canvas.focus({ preventScroll: true });
+    }
+
+    function togglePause() {
+      if (game.state === "playing") pauseGame();
+      else if (game.state === "paused") resumeGame();
+    }
+
+    const directionByCode = {
+      ArrowUp: [-1, 0],
+      ArrowDown: [1, 0],
+      ArrowLeft: [0, -1],
+      ArrowRight: [0, 1],
+      KeyW: [-1, 0],
+      KeyS: [1, 0],
+      KeyA: [0, -1],
+      KeyD: [0, 1],
+    };
+
+    overlayAction.addEventListener("click", () => {
+      ensureAudio();
+      if (game.overlayMode === "start" || game.overlayMode === "gameover") {
+        startNewGame();
+      } else if (game.overlayMode === "pause") {
+        resumeGame();
+      } else if (game.overlayMode === "levelclear") {
+        nextLevel();
+      }
+    });
+
+    soundBtn.addEventListener("click", () => {
+      toggleSound();
+    });
+
+    pauseBtn.addEventListener("click", () => {
+      togglePause();
+    });
+
+    touchPad.addEventListener("pointerdown", (event) => {
+      const button = event.target.closest("button[data-dir]");
+      if (!button) return;
+      event.preventDefault();
+      if (game.state !== "playing") return;
+      const dir = button.dataset.dir;
+      if (dir === "up") requestMove(-1, 0);
+      else if (dir === "down") requestMove(1, 0);
+      else if (dir === "left") requestMove(0, -1);
+      else if (dir === "right") requestMove(0, 1);
+    });
+
+    // Deslizar sobre el tablero en pantallas táctiles.
+    let swipeStart = null;
+    stage.addEventListener("pointerdown", (event) => {
+      if (event.pointerType !== "touch" || game.state !== "playing") return;
+      if (event.target.closest("button")) return;
+      swipeStart = { x: event.clientX, y: event.clientY, id: event.pointerId };
+    });
+    stage.addEventListener("pointerup", (event) => {
+      if (!swipeStart || event.pointerType !== "touch" || event.pointerId !== swipeStart.id) return;
+      const dx = event.clientX - swipeStart.x;
+      const dy = event.clientY - swipeStart.y;
+      swipeStart = null;
+      if (Math.max(Math.abs(dx), Math.abs(dy)) < 24) return;
+      if (Math.abs(dx) > Math.abs(dy)) requestMove(0, dx > 0 ? 1 : -1);
+      else requestMove(dy > 0 ? 1 : -1, 0);
+    });
+    stage.addEventListener("pointercancel", () => { swipeStart = null; });
+
+    window.addEventListener("keydown", (event) => {
+      const target = event.target;
+      const isButton = target instanceof HTMLElement && (target.tagName === "BUTTON" || target.tagName === "A");
+      const dir = directionByCode[event.code] || null;
+
+      if (dir) {
+        if (game.state === "playing") {
+          event.preventDefault();
+          requestMove(dir[0], dir[1]);
+        }
+        return;
+      }
+
+      if (event.code === "Space" || event.code === "Enter") {
+        if (isButton) return;
+        if (!overlay.hidden) {
+          event.preventDefault();
+          overlayAction.click();
+        } else if (event.code === "Space" && (game.state === "playing" || game.state === "paused")) {
+          event.preventDefault();
+          togglePause();
+        }
+        return;
+      }
+
+      if (event.code === "KeyP" || event.code === "Escape") {
+        if (game.state === "playing" || game.state === "paused") {
+          event.preventDefault();
+          togglePause();
+        }
+        return;
+      }
+
+      if (event.code === "KeyM") {
+        event.preventDefault();
+        toggleSound();
+      }
+    }, { passive: false });
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden && game.state === "playing") pauseGame();
+    });
+
+    window.addEventListener("resize", () => {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      if (canvas.width !== Math.round(W * dpr) || canvas.height !== Math.round(H * dpr)) {
+        setupCanvas();
+      }
+    });
+
+    updateSoundButton();
+    setupCanvas();
+    buildWorld();
+    buildDecorations();
+    updateHud(true);
+    showOverlay("start");
+
+    let lastFrame = performance.now();
+    function loop(now) {
+      const dt = Math.min(0.05, Math.max(0, (now - lastFrame) / 1000));
+      lastFrame = now;
+      update(dt);
+      render(now / 1000);
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+
+    // Herramientas internas de QA: activas solo con ?debug=1
+    if (new URLSearchParams(window.location.search).get("debug") === "1") {
+      window.__froggerDebug = {
+        getState() {
+          return {
+            state: game.state,
+            overlayMode: game.overlayMode,
+            score: game.score,
+            best: game.best,
+            lives: game.lives,
+            level: game.level,
+            timeLeft: game.timeLeft,
+            deathCause: game.deathCause,
+            homes: [...game.homes],
+            frog: {
+              row: frog.row,
+              col: frog.col,
+              x: frog.x,
+              y: frog.y,
+              hopping: frog.hopping,
+              platform: frog.platform ? frog.platform.id : null,
+            },
+          };
+        },
+        setTime(seconds) {
+          game.timeLeft = clamp(Number(seconds) || 0, 0, TIME_LIMIT);
+          updateHud(true);
+        },
+        getWorld() {
+          return {
+            vehicles: roadLanes.flatMap((lane) => lane.vehicles.map((vehicle) => ({
+              type: vehicle.type,
+              row: lane.row,
+              x: vehicle.x,
+              y: vehicle.y,
+              w: vehicle.w,
+              h: vehicle.h,
+              dir: lane.dir,
+            }))),
+            platforms: riverLanes.flatMap((lane) => lane.platforms.map((platform) => ({
+              type: platform.type,
+              row: lane.row,
+              x: platform.x,
+              y: platform.y,
+              w: platform.w,
+              dir: lane.dir,
+            }))),
+          };
+        },
+        placeFrog(row, col) {
+          if (!Number.isInteger(row) || !Number.isInteger(col) || row < 0 || row >= ROW_Y.length || col < 0 || col >= COLS) return;
+          frog.row = row;
+          frog.col = col;
+          frog.x = colToX(col);
+          frog.y = ROW_Y[row];
+          frog.startX = frog.x;
+          frog.startY = frog.y;
+          frog.targetX = frog.x;
+          frog.targetY = frog.y;
+          frog.hopping = false;
+          frog.platform = row >= 1 && row <= 5 ? findPlatform(row, frog.x) : null;
+        },
+        placeFrogAt(row, x) {
+          const safeX = clamp(Number(x) || W / 2, PLAY_MIN_X + 4, PLAY_MAX_X - 4);
+          if (!Number.isInteger(row) || row < 0 || row >= ROW_Y.length) return;
+          frog.row = row;
+          frog.col = clamp(Math.round((safeX - COL_X0) / COL_STEP), 0, COLS - 1);
+          frog.x = safeX;
+          frog.y = ROW_Y[row];
+          frog.startX = frog.x;
+          frog.startY = frog.y;
+          frog.targetX = frog.x;
+          frog.targetY = frog.y;
+          frog.hopping = false;
+          frog.platform = row >= 1 && row <= 5 ? findPlatform(row, frog.x) : null;
+        },
+        start() { startNewGame(); },
+        pause() { pauseGame(); },
+        resume() { resumeGame(); },
+        setHome(index, occupied = true) {
+          if (index >= 0 && index < game.homes.length) game.homes[index] = occupied;
+        },
+        fillHomes() {
+          game.homes = [true, true, true, true, true];
+        },
+        forceDie(cause = "car") { die(cause); },
+        skipOverlay() { hideOverlay(); },
+      };
+    }
+  })();
+  </script>
+</body>
+</html>

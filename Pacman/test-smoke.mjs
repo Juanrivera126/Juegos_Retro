@@ -1,0 +1,43 @@
+import fs from "node:fs";
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const targets = await (await fetch("http://127.0.0.1:9333/json")).json();
+const target = targets.find(t => t.url.includes("pacman.html"));
+const ws = new WebSocket(target.webSocketDebuggerUrl);
+await new Promise((res, rej) => { ws.addEventListener("open", res, { once: true }); ws.addEventListener("error", rej, { once: true }); });
+let id = 1; const pending = new Map(); const errors = [];
+ws.addEventListener("message", ev => {
+  const m = JSON.parse(ev.data);
+  if (m.id && pending.has(m.id)) { const p = pending.get(m.id); pending.delete(m.id); m.error ? p.reject(new Error(JSON.stringify(m.error))) : p.resolve(m.result); return; }
+  if (m.method === "Runtime.exceptionThrown") errors.push(m.params.exceptionDetails.text);
+});
+const send = (method, params = {}) => new Promise((resolve, reject) => { const n = id++; pending.set(n, { resolve, reject }); ws.send(JSON.stringify({ id: n, method, params })); });
+const evalJS = async expression => { const r = await send("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true, userGesture: true }); if (r.exceptionDetails) throw new Error(JSON.stringify(r.exceptionDetails)); return r.result.value; };
+const snap = () => evalJS("window.__PACMAN_DEBUG__.getSnapshot()");
+const key = async (k, code, vk) => {
+  await send("Input.dispatchKeyEvent", { type: "keyDown", key: k, code, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk });
+  await send("Input.dispatchKeyEvent", { type: "keyUp", key: k, code, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk });
+};
+await send("Page.enable"); await send("Runtime.enable");
+await send("Page.setDeviceMetricsOverride", { width: 1100, height: 1200, deviceScaleFactor: 1, mobile: false });
+await send("Page.reload", { ignoreCache: true });
+await sleep(900);
+const initial = await snap();
+await key("Enter", "Enter", 13);
+await sleep(2300);
+const playing = await snap();
+const soundBefore = await evalJS("document.getElementById('soundBtn').getAttribute('aria-pressed')");
+await key("m", "KeyM", 77);
+const soundAfter = await evalJS("document.getElementById('soundBtn').getAttribute('aria-pressed')");
+await key("m", "KeyM", 77);
+await key("p", "KeyP", 80);
+await sleep(200);
+const paused = await snap();
+await key("p", "KeyP", 80);
+await sleep(200);
+const resumed = await snap();
+const overlay = await evalJS("document.getElementById('overlay').className");
+const hud = await evalJS("({score:document.getElementById('score').textContent,lives:document.getElementById('lives').children.length,high:document.getElementById('highScore').textContent})");
+const r = await send("Page.captureScreenshot", { format: "png", fromSurface: true });
+fs.writeFileSync("shot-final.png", Buffer.from(r.data, "base64"));
+console.log(JSON.stringify({initial,playing,soundBefore,soundAfter,paused,resumed,overlay,hud,errors}, null, 2));
+ws.close();

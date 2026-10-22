@@ -1,0 +1,20 @@
+Crea un clon de Pacman funcional en HTML, con el laberinto, los fantasmas, la puntuación y controles de teclado. No entregues el resultado hasta no evaluarlo con un árbitro y de si el árbitro no está satisfecho, repite para mejorar el resultado, con un máximo de tres repeticiones.
+
+Voy a construir el juego como un único HTML autónomo (canvas, sin dependencias) y después lo validaré en Chrome real antes de pasarlo a un árbitro independiente.
+
+La validación técnica ya pasa: movimiento, túnel, IA de fantasmas, power pellets, muerte, nivel completado, game over, reinicio, pausa y vista móvil. Ahora la someto a un árbitro independiente.
+
+Listo. Creé un clon de Pac-Man completo en un único archivo HTML autónomo, sin dependencias externas.
+
+Incluye
+Laberinto 28×31 con 248 puntos, 4 píldoras de energía y túnel lateral.
+4 fantasmas con IA diferenciada: Blinky, Pinky, Inky y Clyde, con fases de dispersión/persecución, modo asustado y retorno a la casa.
+Puntuación, récord persistente, 3 vidas, vida extra, niveles progresivos y bonus al completar nivel.
+Controles de teclado: flechas/WASD para moverte, P pausa, M sonido, Enter iniciar/reiniciar.
+Casa de fantasmas con puerta, animaciones, efectos de sonido sintetizados, HUD neón y controles táctiles para móvil.
+Evaluación del árbitro
+VEREDICTO: SATISFECHO · 9/10 · sin defectos bloqueantes.
+Las seis categorías evaluadas recibieron 9/10. Al quedar satisfecho, no fue necesario repetir la evaluación.
+
+Tiempo: 15 m 1 s
+Costo: $0.15

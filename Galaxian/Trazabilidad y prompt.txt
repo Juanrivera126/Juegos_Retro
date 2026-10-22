@@ -1,0 +1,26 @@
+Crea un clon de Galaxian funcional en HTML, con la nave del jugador (Galaxip), movimiento restringido estrictamente en el eje horizontal (izquierda y derecha) en la parte inferior de la pantalla, una cuadrícula organizada de alienígenas que se desplaza lateralmente y de forma conjunta en la parte superior, se compone de cuatro rangos de enemigos con diferentes colores y jerarquías (Drones azules, Emisarios morados, Escoltas rojos y los Flagships/Comandantes amarillos), los enemigos no se limitan a quedarse en la formación; se desprenden individualmente o en grupos pequeños para realizar vuelos suicidas en picada hacia el jugador, mientras vuelan en picada, los alienígenas realizan trayectorias curvas (bucles) y disparan proyectiles, puntos estándar por destruir enemigos mientras están estáticos en la formación, puntuación doble o multiplicada por destruirlos mientras están en pleno vuelo de picada. bonificación máxima por destruir a un Comandante (amarillo) en el aire junto con sus escoltas rojos, un fondo de estrellas en movimiento vertical (scroll) que simula el viaje por el espacio. aumento progresivo de la velocidad y agresividad de las incursiones enemigas conforme avanzan las oleadas.
+
+No entregues el resultado hasta no evaluarlo con un árbitro y si el árbitro no está satisfecho, repite para mejorar el resultado, con un máximo de tres repeticiones. Incluye un footer con el texto "Diseñado por Juan Guillermo Rivera Berrío con tecnología DeepSeek V 4.1"
+
+Listo. El juego está en index.html. Es un arcade autocontenido: no necesita servidor, instalación ni dependencias externas; solo ábrelo en un navegador moderno.
+
+Incluye
+
+Galaxip con movimiento estrictamente horizontal y disparo.
+Formación de 24 naves en 4 rangos: Drones azules, Emisarios morados, Escoltas rojos y Comandantes amarillos.
+Ataques individuales y en pequeños escuadrones, con trayectorias curvas y bucles.
+Disparo enemigo durante las picadas.
+Puntuación estándar en formación y ×2 en vuelo.
+Bono máximo +1500 al derribar al Comandante y sus dos Escoltas en el aire.
+Estrellas con scroll vertical, oleadas progresivas, vidas, pausa, game over, reinicio y audio sintetizado.
+Controles táctiles y diseño responsive.
+Footer con el texto exacto solicitado.
+Validación
+
+QA automatizado en navegador real: 30/30 pruebas aprobadas, sin errores JavaScript.
+Árbitro independiente: APROBADO — 96/100, sin defectos bloqueantes.
+Controles: ← → o A D para mover, Espacio para disparar, P para pausar.
+
+
+Tiempo: 19 m 32 s
+Costo: $0.18
